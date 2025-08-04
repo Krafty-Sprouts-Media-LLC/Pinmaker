@@ -1,0 +1,161 @@
+# FastAPI and web framework dependencies
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+jinja2==3.1.4
+aiofiles==24.1.0
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Core AI and Computer Vision libraries (TESTED COMBINATION)
+torch==2.4.1
+torchvision==0.19.1
+ultralytics==8.3.50
+easyocr==1.7.2
+opencv-python==4.10.0.84
+scikit-learn==1.5.2
+numpy==1.26.4
+Pillow==10.4.0
+colorthief==0.2.1
+
+# Font handling and typography
+fontTools==4.44.0
+fontconfig==0.7.0
+fontforge-python==1.3.4
+
+# Image processing and SVG generation
+svglib==1.5.1
+reportlab==4.0.7
+cairosvg==2.7.1
+wand==0.6.13
+svgpathtools==1.6.1
+
+# HTTP clients for stock photo APIs
+requests==2.32.3
+httpx==0.28.1
+aiohttp==3.11.10
+
+# Advanced image processing
+scipy==1.14.1
+scikit-image==0.24.0
+mahotas==1.4.15
+imageio==2.36.1
+
+# Color analysis and processing
+webcolors==1.13
+colormath==3.0.0
+colorspacious==1.1.2
+haishoku==1.1.8
+
+# Text processing and NLP
+nltk==3.8.1
+textblob==0.17.1
+fuzzywuzzy==0.18.0
+python-levenshtein==0.23.0
+
+# File handling and utilities
+python-magic==0.4.27
+watchdog==3.0.0
+filetype==1.2.0
+pathlibutil==0.2.12
+
+# Configuration and environment
+python-dotenv==1.0.0
+pyyaml==6.0.1
+toml==0.10.2
+
+# Logging and monitoring
+loguru==0.7.2
+rich==13.7.0
+psutil==5.9.6
+structlog==23.2.0
+
+# Performance and optimization
+memory-profiler==0.61.0
+line-profiler==4.1.1
+joblib==1.3.2
+
+# Async utilities
+asyncio-throttle==1.0.2
+anyio==4.1.0
+
+# Security and validation
+cryptography==41.0.7
+cerberus==1.3.5
+marshmallow==3.20.1
+
+# Data handling
+pandas==2.1.3
+orjson==3.9.10
+ujson==5.8.0
+
+# CLI and utilities
+click==8.1.7
+typer==0.9.0
+colorama==0.4.6
+tqdm==4.66.1
+
+# Date/time handling
+python-dateutil==2.8.2
+arrow==1.3.0
+
+# XML and markup processing
+lxml==4.9.3
+markupsafe==2.1.3
+
+# Caching and storage
+diskcache==5.6.3
+redis==5.0.1
+
+# API rate limiting and middleware
+slowapi==0.1.9
+fastapi-limiter==0.1.5
+
+# Health checks and metrics
+healthcheck==1.3.3
+prometheus-client==0.19.0
+
+# Error tracking
+sentry-sdk==1.38.0
+rollbar==0.16.3
+
+# Image metadata and EXIF
+exifread==3.0.0
+
+# Compression
+zstandard==0.22.0
+
+# WebSocket support
+websockets==12.0
+
+# HTTP/2 support
+h2==4.1.0
+
+# Template processing
+cookiecutter==2.5.0
+jinja2-time==0.2.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Production server and deployment
+gunicorn==21.2.0
+supervisor==4.2.5
+
+# Optional: Cloud storage (if needed)
+# boto3==1.34.0
+
+# Optional: Task queue (if needed for background processing)
+# celery==5.3.4
+
+# Optional: Database (if needed for future features)
+# sqlalchemy==2.0.23
+# alembic==1.13.1
+
+# Optional: Advanced ML (if needed for enhanced accuracy)
+# xgboost==2.0.2
+# spacy==3.7.2

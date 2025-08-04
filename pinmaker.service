@@ -1,0 +1,106 @@
+[Unit]
+Description=Pinterest Template Generator - AI-powered template creation service
+Documentation=https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker
+After=network.target network-online.target
+Wants=network-online.target
+Requires=network.target
+
+[Service]
+# Service type and execution
+Type=exec
+User=pinmaker
+Group=pinmaker
+WorkingDirectory=/home/pinmaker/app
+
+# Environment configuration
+Environment=PATH=/home/pinmaker/app/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/home/pinmaker/app
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/home/pinmaker/app/.env
+
+# Main service command
+ExecStart=/home/pinmaker/app/venv/bin/gunicorn main:app -c gunicorn.conf.py
+
+# Reload configuration
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security and sandboxing
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false  # Disabled for AI models
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# File system permissions
+ReadWritePaths=/home/pinmaker/app
+ReadWritePaths=/home/pinmaker/uploads
+ReadWritePaths=/home/pinmaker/templates
+ReadWritePaths=/home/pinmaker/previews
+ReadWritePaths=/home/pinmaker/fonts
+ReadWritePaths=/home/pinmaker/logs
+ReadWritePaths=/tmp
+ReadWritePaths=/var/tmp
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+LimitCORE=0
+
+# Memory and CPU limits (adjust based on your VPS)
+# MemoryMax=4G
+# CPUQuota=200%
+
+# Standard output and error
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pinmaker
+
+# Process management
+PIDFile=/home/pinmaker/logs/pinmaker.pid
+
+# Watchdog configuration
+WatchdogSec=30
+NotifyAccess=all
+
+# Service dependencies
+BindsTo=
+PartOf=
+Conflicts=
+
+[Install]
+WantedBy=multi-user.target
+Alias=pinterest-generator.service
+
+# Additional service information
+# This service runs the Pinterest Template Generator application
+# It uses Gunicorn as the WSGI server with Uvicorn workers
+# The service is configured with security hardening and resource limits
+# Logs are sent to systemd journal and can be viewed with:
+# journalctl -u pinmaker -f
+#
+# Management commands:
+# sudo systemctl start pinmaker     # Start the service
+# sudo systemctl stop pinmaker      # Stop the service
+# sudo systemctl restart pinmaker   # Restart the service
+# sudo systemctl reload pinmaker    # Reload configuration
+# sudo systemctl status pinmaker    # Check service status
+# sudo systemctl enable pinmaker    # Enable auto-start on boot
+# sudo systemctl disable pinmaker   # Disable auto-start on boot
