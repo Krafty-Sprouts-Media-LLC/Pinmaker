@@ -10,16 +10,16 @@ Requires=network.target
 Type=exec
 User=pinmaker
 Group=pinmaker
-WorkingDirectory=/home/pinmaker/app
+WorkingDirectory=/opt/Pinmaker
 
 # Environment configuration
-Environment=PATH=/home/pinmaker/app/venv/bin:/usr/local/bin:/usr/bin:/bin
-Environment=PYTHONPATH=/home/pinmaker/app
+Environment=PATH=/opt/Pinmaker/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/opt/Pinmaker
 Environment=PYTHONUNBUFFERED=1
-EnvironmentFile=/home/pinmaker/app/.env
+EnvironmentFile=-/opt/Pinmaker/.env
 
 # Main service command
-ExecStart=/home/pinmaker/app/venv/bin/gunicorn main:app -c gunicorn.conf.py
+ExecStart=/opt/Pinmaker/venv/bin/python main.py
 
 # Reload configuration
 ExecReload=/bin/kill -s HUP $MAINPID
@@ -50,12 +50,12 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 
 # File system permissions
-ReadWritePaths=/home/pinmaker/app
-ReadWritePaths=/home/pinmaker/uploads
-ReadWritePaths=/home/pinmaker/templates
-ReadWritePaths=/home/pinmaker/previews
-ReadWritePaths=/home/pinmaker/fonts
-ReadWritePaths=/home/pinmaker/logs
+ReadWritePaths=/opt/Pinmaker
+ReadWritePaths=/opt/Pinmaker/uploads
+ReadWritePaths=/opt/Pinmaker/templates
+ReadWritePaths=/opt/Pinmaker/previews
+ReadWritePaths=/opt/Pinmaker/fonts
+ReadWritePaths=/opt/Pinmaker/logs
 ReadWritePaths=/tmp
 ReadWritePaths=/var/tmp
 
@@ -74,7 +74,7 @@ StandardError=journal
 SyslogIdentifier=pinmaker
 
 # Process management
-PIDFile=/home/pinmaker/logs/pinmaker.pid
+PIDFile=/opt/Pinmaker/logs/pinmaker.pid
 
 # Watchdog configuration
 WatchdogSec=30
@@ -83,7 +83,6 @@ NotifyAccess=all
 # Service dependencies
 BindsTo=
 PartOf=
-Conflicts=
 
 [Install]
 WantedBy=multi-user.target
