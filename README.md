@@ -84,7 +84,7 @@ The setup script will:
 Edit the environment file:
 
 ```bash
-nano /home/pinmaker/app/.env
+nano /opt/Pinmaker/.env
 ```
 
 Add your API keys:
@@ -115,7 +115,7 @@ curl https://pinmaker.kraftysprouts.com/health
 
 1. **Edit files directly on VPS**:
    ```bash
-   cd /home/pinmaker/app
+   cd /opt/Pinmaker
    nano main.py  # or any other file
    ```
 
@@ -134,7 +134,7 @@ curl https://pinmaker.kraftysprouts.com/health
 ### Frontend Development
 
 ```bash
-cd /home/pinmaker/app/frontend
+cd /opt/Pinmaker/frontend
 
 # Install dependencies
 npm install
@@ -301,10 +301,10 @@ GET /api/fonts/{name}/info # Get font information
 ## 📊 Monitoring & Logging
 
 ### Log Files
-- **Application**: `/home/pinmaker/logs/app.log`
-- **Access**: `/home/pinmaker/logs/access.log`
-- **Error**: `/home/pinmaker/logs/error.log`
-- **Monitor**: `/home/pinmaker/logs/monitor.log`
+- **Application**: `/opt/Pinmaker/logs/app.log`
+- **Access**: `/opt/Pinmaker/logs/access.log`
+- **Error**: `/opt/Pinmaker/logs/error.log`
+- **Monitor**: `/opt/Pinmaker/logs/monitor.log`
 
 ### Monitoring Commands
 ```bash
@@ -321,7 +321,7 @@ htop
 df -h
 
 # View recent errors
-tail -f /home/pinmaker/logs/error.log
+tail -f /opt/Pinmaker/logs/error.log
 ```
 
 ### Automated Monitoring
@@ -341,13 +341,13 @@ tail -f /home/pinmaker/logs/error.log
 ### Manual Backup
 ```bash
 # Create backup
-/home/pinmaker/backup.sh
+/opt/Pinmaker/backup.sh
 
 # List backups
-ls -la /home/pinmaker/backups/
+ls -la /opt/Pinmaker/backups/
 
 # Restore from backup
-tar -xzf /home/pinmaker/backups/pinmaker_backup_YYYYMMDD_HHMMSS.tar.gz
+tar -xzf /opt/Pinmaker/backups/pinmaker_backup_YYYYMMDD_HHMMSS.tar.gz
 ```
 
 ## 🚀 Performance Optimization
@@ -419,19 +419,19 @@ sudo certbot certificates
 df -h
 
 # Check permissions
-ls -la /home/pinmaker/uploads/
+ls -la /opt/Pinmaker/uploads/
 
 # Fix permissions
-sudo chown -R pinmaker:pinmaker /home/pinmaker/
+sudo chown -R pinmaker:pinmaker /opt/Pinmaker/
 ```
 
 ### Performance Issues
 
 #### Slow Response Times
 1. Check system resources: `htop`
-2. Monitor logs: `tail -f /home/pinmaker/logs/app.log`
+2. Monitor logs: `tail -f /opt/Pinmaker/logs/app.log`
 3. Restart services: `sudo systemctl restart pinmaker nginx`
-4. Clear cache: `rm -rf /home/pinmaker/app/__pycache__`
+4. Clear cache: `rm -rf /opt/Pinmaker/__pycache__`
 
 #### High CPU Usage
 1. Check running processes: `ps aux | grep python`

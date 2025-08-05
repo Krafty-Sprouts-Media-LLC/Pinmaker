@@ -614,7 +614,7 @@ async def performance_middleware(request: Request, call_next):
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 ├─────────────────────────────────────────────────────────────┤
 │                    File System                              │
-│  /home/pinmaker/                                           │
+│  /opt/Pinmaker/                                             │
 │  ├── app/          (Application code)                      │
 │  ├── uploads/      (User uploads)                          │
 │  ├── templates/    (Generated templates)                   │
@@ -637,9 +637,9 @@ After=network.target
 Type=exec
 User=pinmaker
 Group=pinmaker
-WorkingDirectory=/home/pinmaker
-Environment=PATH=/home/pinmaker/venv/bin
-ExecStart=/home/pinmaker/venv/bin/gunicorn main:app -c gunicorn.conf.py
+WorkingDirectory=/opt/Pinmaker
+Environment=PATH=/opt/Pinmaker/venv/bin
+ExecStart=/opt/Pinmaker/venv/bin/gunicorn main:app -c gunicorn.conf.py
 Restart=always
 RestartSec=10
 

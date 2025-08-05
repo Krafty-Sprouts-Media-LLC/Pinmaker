@@ -223,19 +223,19 @@ sudo apt install -y \
 
 ```bash
 # Create application directories
-sudo mkdir -p /home/pinmaker/{app,uploads,templates,previews,fonts,logs,backups}
-sudo chown -R pinmaker:pinmaker /home/pinmaker
+sudo mkdir -p /opt/Pinmaker/{app,uploads,templates,previews,fonts,logs,backups}
+sudo chown -R pinmaker:pinmaker /opt/Pinmaker
 
 # Set permissions
-chmod 755 /home/pinmaker
-chmod 775 /home/pinmaker/{uploads,templates,previews,fonts}
-chmod 755 /home/pinmaker/{app,logs,backups}
+chmod 755 /opt/Pinmaker
+chmod 775 /opt/Pinmaker/{uploads,templates,previews,fonts}
+chmod 755 /opt/Pinmaker/{app,logs,backups}
 ```
 
 ### 3. Clone Repository
 
 ```bash
-cd /home/pinmaker
+cd /opt/Pinmaker
 git clone https://github.com/yourusername/pinmaker.git app
 cd app
 ```
@@ -336,7 +336,7 @@ sudo systemctl restart nginx
 
 ### Environment Variables
 
-Edit `/home/pinmaker/app/.env`:
+Edit `/opt/Pinmaker/app/.env`:
 
 ```bash
 # Application Settings
@@ -359,7 +359,7 @@ ALLOWED_EXTENSIONS=jpg,jpeg,png,webp
 CLEANUP_HOURS=24
 
 # AI/ML Settings
-MODEL_CACHE_DIR=/home/pinmaker/app/models
+MODEL_CACHE_DIR=/opt/Pinmaker/app/models
 BATCH_SIZE=1
 CONFIDENCE_THRESHOLD=0.5
 
@@ -379,7 +379,7 @@ ADMIN_API_KEY=generate-admin-api-key
 
 # Logging
 LOG_LEVEL=INFO
-LOG_FILE=/home/pinmaker/logs/app.log
+LOG_FILE=/opt/Pinmaker/logs/app.log
 LOG_MAX_SIZE=10485760  # 10MB
 LOG_BACKUP_COUNT=5
 ```
@@ -418,32 +418,32 @@ server {
     
     # Static files
     location /static/ {
-        alias /home/pinmaker/app/dist/;
+        alias /opt/Pinmaker/app/dist/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
     
     # Uploaded files
     location /uploads/ {
-        alias /home/pinmaker/uploads/;
+        alias /opt/Pinmaker/uploads/;
         expires 1h;
     }
     
     # Generated templates
     location /templates/ {
-        alias /home/pinmaker/templates/;
+        alias /opt/Pinmaker/templates/;
         expires 1h;
     }
     
     # Preview images
     location /previews/ {
-        alias /home/pinmaker/previews/;
+        alias /opt/Pinmaker/previews/;
         expires 1h;
     }
     
     # Custom fonts
     location /fonts/ {
-        alias /home/pinmaker/fonts/;
+        alias /opt/Pinmaker/fonts/;
         expires 1y;
         add_header Cache-Control "public";
     }
@@ -470,7 +470,7 @@ server {
     # Frontend application
     location / {
         try_files $uri $uri/ /index.html;
-        root /home/pinmaker/app/dist;
+        root /opt/Pinmaker/app/dist;
         index index.html;
     }
 }
@@ -570,7 +570,7 @@ sudo tail -f /var/log/nginx/access.log
 
 ```bash
 # Run monitoring setup
-cd /home/pinmaker/app
+cd /opt/Pinmaker/app
 sudo ./monitoring.sh
 ```
 
@@ -585,11 +585,11 @@ This sets up:
 
 ```bash
 # Create monitoring directory
-sudo mkdir -p /home/pinmaker/monitoring
+sudo mkdir -p /opt/Pinmaker/monitoring
 
 # Copy monitoring scripts
-sudo cp monitoring/*.sh /home/pinmaker/monitoring/
-sudo chmod +x /home/pinmaker/monitoring/*.sh
+sudo cp monitoring/*.sh /opt/Pinmaker/monitoring/
+sudo chmod +x /opt/Pinmaker/monitoring/*.sh
 
 # Setup cron jobs
 sudo crontab -e
@@ -599,23 +599,23 @@ Add these cron jobs:
 
 ```bash
 # System monitoring (every 5 minutes)
-*/5 * * * * /home/pinmaker/monitoring/system_monitor.sh
+*/5 * * * * /opt/Pinmaker/monitoring/system_monitor.sh
 
 # Performance monitoring (every minute)
-* * * * * /home/pinmaker/monitoring/performance_monitor.sh
+* * * * * /opt/Pinmaker/monitoring/performance_monitor.sh
 
 # Log analysis (every hour)
-0 * * * * /home/pinmaker/monitoring/log_analyzer.sh
+0 * * * * /opt/Pinmaker/monitoring/log_analyzer.sh
 
 # Cleanup old files (daily at 2 AM)
-0 2 * * * /home/pinmaker/monitoring/cleanup.sh
+0 2 * * * /opt/Pinmaker/monitoring/cleanup.sh
 ```
 
 ### Monitoring Dashboard
 
 ```bash
 # Start monitoring dashboard
-/home/pinmaker/monitoring/dashboard.sh
+/opt/Pinmaker/monitoring/dashboard.sh
 ```
 
 Access the dashboard at: `http://your-server-ip:3000`
@@ -626,7 +626,7 @@ Access the dashboard at: `http://your-server-ip:3000`
 
 ```bash
 # Setup backup system
-cd /home/pinmaker/app
+cd /opt/Pinmaker/app
 sudo ./backup.sh setup
 
 # Configure backup schedule
@@ -637,26 +637,26 @@ Add backup cron jobs:
 
 ```bash
 # Daily backup at 3 AM
-0 3 * * * /home/pinmaker/app/backup.sh daily
+0 3 * * * /opt/Pinmaker/app/backup.sh daily
 
 # Weekly backup on Sunday at 4 AM
-0 4 * * 0 /home/pinmaker/app/backup.sh weekly
+0 4 * * 0 /opt/Pinmaker/app/backup.sh weekly
 
 # Monthly backup on 1st at 5 AM
-0 5 1 * * /home/pinmaker/app/backup.sh monthly
+0 5 1 * * /opt/Pinmaker/app/backup.sh monthly
 ```
 
 ### Manual Backup
 
 ```bash
 # Create immediate backup
-/home/pinmaker/app/backup.sh backup
+/opt/Pinmaker/app/backup.sh backup
 
 # List available backups
-/home/pinmaker/app/backup.sh list
+/opt/Pinmaker/app/backup.sh list
 
 # Restore from backup
-/home/pinmaker/app/backup.sh restore backup-2024-01-15.tar.gz
+/opt/Pinmaker/app/backup.sh restore backup-2024-01-15.tar.gz
 ```
 
 ### Remote Backup (Optional)
@@ -671,7 +671,7 @@ sudo apt install -y awscli
 aws configure
 
 # Edit backup script configuration
-nano /home/pinmaker/app/backup.sh
+nano /opt/Pinmaker/app/backup.sh
 ```
 
 Update backup configuration:
@@ -698,10 +698,10 @@ sudo systemctl status pinmaker
 sudo journalctl -u pinmaker -n 50
 
 # Check Python environment
-sudo -u pinmaker /home/pinmaker/venv/bin/python -c "import main"
+sudo -u pinmaker /opt/Pinmaker/app/venv/bin/python -c "import main"
 
 # Verify dependencies
-sudo -u pinmaker /home/pinmaker/venv/bin/pip check
+sudo -u pinmaker /opt/Pinmaker/app/venv/bin/pip check
 ```
 
 #### 2. Nginx Configuration Issues
@@ -714,7 +714,7 @@ sudo nginx -t
 sudo tail -f /var/log/nginx/error.log
 
 # Verify file permissions
-ls -la /home/pinmaker/app/dist/
+ls -la /opt/Pinmaker/app/dist/
 ```
 
 #### 3. SSL Certificate Problems
@@ -734,7 +734,7 @@ ssl-cert-check -c /etc/letsencrypt/live/pinmaker.kraftysprouts.com/fullchain.pem
 
 ```bash
 # Check upload directory permissions
-ls -la /home/pinmaker/uploads/
+ls -la /opt/Pinmaker/uploads/
 
 # Verify disk space
 df -h
@@ -747,10 +747,10 @@ grep client_max_body_size /etc/nginx/sites-available/pinmaker
 
 ```bash
 # Check model directory
-ls -la /home/pinmaker/app/models/
+ls -la /opt/Pinmaker/app/models/
 
 # Test model loading
-sudo -u pinmaker /home/pinmaker/venv/bin/python -c "import torch; print(torch.cuda.is_available())"
+sudo -u pinmaker /opt/Pinmaker/app/venv/bin/python -c "import torch; print(torch.cuda.is_available())"
 
 # Check memory usage
 free -h
@@ -768,7 +768,7 @@ top -u pinmaker
 htop
 
 # Check AI model performance
-sudo -u pinmaker /home/pinmaker/monitoring/performance_monitor.sh
+sudo -u pinmaker /opt/Pinmaker/monitoring/performance_monitor.sh
 ```
 
 #### 2. Memory Issues
@@ -781,7 +781,7 @@ free -h
 ps aux --sort=-%mem | head
 
 # Check for memory leaks
-sudo -u pinmaker /home/pinmaker/monitoring/memory_check.sh
+sudo -u pinmaker /opt/Pinmaker/monitoring/memory_check.sh
 ```
 
 #### 3. Disk Space Issues
@@ -791,17 +791,17 @@ sudo -u pinmaker /home/pinmaker/monitoring/memory_check.sh
 df -h
 
 # Find large files
-sudo du -h /home/pinmaker/ | sort -rh | head -20
+sudo du -h /opt/Pinmaker/ | sort -rh | head -20
 
 # Clean up old files
-sudo -u pinmaker /home/pinmaker/monitoring/cleanup.sh
+sudo -u pinmaker /opt/Pinmaker/monitoring/cleanup.sh
 ```
 
 ### Log Analysis
 
 ```bash
 # Application logs
-tail -f /home/pinmaker/logs/app.log
+tail -f /opt/Pinmaker/logs/app.log
 
 # Nginx access logs
 tail -f /var/log/nginx/access.log
@@ -813,7 +813,7 @@ tail -f /var/log/nginx/error.log
 sudo journalctl -f
 
 # Filter logs by error level
-grep ERROR /home/pinmaker/logs/app.log
+grep ERROR /opt/Pinmaker/logs/app.log
 ```
 
 ## Maintenance
@@ -830,7 +830,7 @@ sudo systemctl status pinmaker nginx
 df -h
 
 # Check error logs
-grep ERROR /home/pinmaker/logs/app.log | tail -10
+grep ERROR /opt/Pinmaker/logs/app.log | tail -10
 ```
 
 #### Weekly
@@ -840,10 +840,10 @@ grep ERROR /home/pinmaker/logs/app.log | tail -10
 sudo apt update && sudo apt upgrade -y
 
 # Clean up old files
-sudo -u pinmaker /home/pinmaker/monitoring/cleanup.sh
+sudo -u pinmaker /opt/Pinmaker/monitoring/cleanup.sh
 
 # Verify backups
-/home/pinmaker/app/backup.sh verify
+/opt/Pinmaker/app/backup.sh verify
 
 # Check SSL certificate expiry
 sudo certbot certificates
@@ -853,16 +853,16 @@ sudo certbot certificates
 
 ```bash
 # Review performance metrics
-/home/pinmaker/monitoring/performance_report.sh
+/opt/Pinmaker/monitoring/performance_report.sh
 
 # Update Python dependencies
-sudo -u pinmaker /home/pinmaker/venv/bin/pip list --outdated
+sudo -u pinmaker /opt/Pinmaker/app/venv/bin/pip list --outdated
 
 # Security audit
 sudo apt audit
 
 # Review log files
-/home/pinmaker/monitoring/log_analyzer.sh --monthly
+/opt/Pinmaker/monitoring/log_analyzer.sh --monthly
 ```
 
 ### Updates and Deployments
@@ -871,7 +871,7 @@ sudo apt audit
 
 ```bash
 # Use deployment script
-cd /home/pinmaker/app
+cd /opt/Pinmaker/app
 ./deploy.sh deploy
 
 # Manual update process
@@ -901,7 +901,7 @@ sudo systemctl restart pinmaker
 sudo apt update && sudo apt upgrade -y
 
 # Update Python security packages
-sudo -u pinmaker /home/pinmaker/venv/bin/pip install --upgrade pip setuptools
+sudo -u pinmaker /opt/Pinmaker/app/venv/bin/pip install --upgrade pip setuptools
 
 # Update Node.js security packages
 npm audit fix
@@ -931,7 +931,7 @@ sudo tail -f /var/log/fail2ban.log
 
 #### Configuration Updates
 
-Update `/home/pinmaker/app/.env`:
+Update `/opt/Pinmaker/app/.env`:
 
 ```bash
 # Increase workers based on CPU cores
@@ -997,7 +997,7 @@ sudo systemctl restart nfs-kernel-server
 
 # Mount on application servers
 sudo apt install -y nfs-common
-sudo mount -t nfs storage-server:/shared/pinmaker /home/pinmaker/shared
+sudo mount -t nfs storage-server:/shared/pinmaker /opt/Pinmaker/shared
 ```
 
 ### Cloud Migration

@@ -500,9 +500,9 @@ case "${1:-daily}" in
         echo ""
         echo "Examples:"
         echo "  $0 daily"
-        echo "  $0 restore /home/pinmaker/backups/daily/pinmaker_daily_20240101_120000 full"
+        echo "  $0 restore /opt/Pinmaker/backups/daily/pinmaker_daily_20240101_120000 full"
         echo "  $0 list"
-        echo "  $0 verify /home/pinmaker/backups/daily/pinmaker_daily_20240101_120000"
+        echo "  $0 verify /opt/Pinmaker/backups/daily/pinmaker_daily_20240101_120000"
         ;;
     
     *)
