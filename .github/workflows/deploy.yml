@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy to Pinmaker
 
 on:
   push:
@@ -80,7 +80,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to VPS
+    - name: Deploy to Pinmaker
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}

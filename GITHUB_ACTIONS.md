@@ -86,14 +86,14 @@ The GitHub Actions workflow (`.github/workflows/deploy.yml`) includes:
 
 2. **GitHub Actions will automatically**:
    - Run tests
-   - Deploy to VPS (if tests pass)
+   - Deploy to Pinmaker (if tests pass)
    - Send notifications
    - Rollback if deployment fails
 
 ### Manual Deployment
 
 1. **Go to**: `Actions` tab in your GitHub repository
-2. **Select**: `Deploy to VPS` workflow
+2. **Select**: `Deploy to Pinmaker` workflow
 3. **Click**: `Run workflow`
 4. **Choose**: branch to deploy
 5. **Click**: `Run workflow` button
