@@ -8,8 +8,10 @@ pydantic==2.10.3
 pydantic-settings==2.6.1
 
 # Core AI and Computer Vision libraries (PYTHON 3.12 COMPATIBLE)
-torch==2.5.1
-torchvision==0.20.1
+# PyTorch CPU-only installation for better compatibility
+torch==2.5.1+cpu
+torchvision==0.20.1+cpu
+torchaudio==2.5.1+cpu
 ultralytics==8.3.50
 easyocr==1.7.2
 opencv-python==4.10.0.84

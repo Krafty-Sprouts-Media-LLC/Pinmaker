@@ -215,6 +215,13 @@ pip install --upgrade pip setuptools wheel
 
 # Install Python dependencies
 log "Installing Python dependencies..."
+
+# Install PyTorch with CPU support first (prevents CUDA issues)
+log "Installing PyTorch CPU version..."
+pip install torch==2.5.1+cpu torchvision==0.20.1+cpu torchaudio==2.5.1+cpu --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies
+log "Installing remaining dependencies..."
 pip install -r requirements.txt
 
 # Install frontend dependencies and build
@@ -603,6 +610,27 @@ $APP_DIR/logs/*.log {
     endscript
 }
 EOF
+
+# Configure monitoring
+log "Setting up monitoring..."
+sudo cp monitoring.sh /opt/Pinmaker/
+sudo chmod +x /opt/Pinmaker/monitoring.sh
+
+# Configure log rotation to prevent disk space issues
+log "Setting up log rotation..."
+sudo cp logrotate.conf /etc/logrotate.d/pinmaker
+sudo chmod 644 /etc/logrotate.d/pinmaker
+log "Log rotation configured - logs will be rotated daily and compressed"
+
+# Install disk monitoring script
+log "Setting up disk space monitoring..."
+sudo cp disk-monitor.sh /opt/Pinmaker/
+sudo chmod +x /opt/Pinmaker/disk-monitor.sh
+
+# Add cron job for disk monitoring (every hour)
+log "Setting up disk monitoring cron job..."
+(crontab -l 2>/dev/null; echo "0 * * * * /opt/Pinmaker/disk-monitor.sh >/dev/null 2>&1") | crontab -
+log "Disk monitoring will run every hour and alert at 75% usage"
 
 # Create backup script
 log "Creating backup script..."

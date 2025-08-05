@@ -344,7 +344,20 @@ install_dependencies() {
     # Update Python dependencies
     log_deploy "Updating Python dependencies..."
     pip install --upgrade pip
+    
+    # Install PyTorch with CPU support first (prevents CUDA issues)
+    log_deploy "Installing PyTorch CPU version..."
+    pip install torch==2.5.1+cpu torchvision==0.20.1+cpu torchaudio==2.5.1+cpu --index-url https://download.pytorch.org/whl/cpu
+    
+    # Install remaining dependencies
+    log_deploy "Installing remaining dependencies..."
     pip install -r requirements.txt
+    
+    # Verify critical dependencies
+    log_deploy "Verifying critical dependencies..."
+    python -c "import torch; print(f'PyTorch {torch.__version__} installed successfully')" || error "PyTorch import failed"
+    python -c "import easyocr; print('EasyOCR imported successfully')" || error "EasyOCR import failed"
+    python -c "import fastapi; print('FastAPI imported successfully')" || error "FastAPI import failed"
     
     # Install/update Node.js dependencies for frontend
     if [ -f "frontend/package.json" ]; then
