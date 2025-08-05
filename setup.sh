@@ -76,7 +76,7 @@ sudo apt install -y \
     fail2ban \
     logrotate
 
-# Install Python 3.11
+# Install Python 3.12
 log "Installing Python $PYTHON_VERSION..."
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
@@ -180,7 +180,7 @@ log() {
 APP_USER="pinmaker"
 APP_DIR="/home/$APP_USER"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # Update with your repo
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="3.12"
 
 cd $APP_DIR
 

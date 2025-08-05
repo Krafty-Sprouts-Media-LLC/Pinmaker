@@ -747,7 +747,7 @@ async def logging_middleware(request: Request, call_next):
 ### Backend Technologies
 
 - **Framework**: FastAPI 0.104+
-- **Language**: Python 3.11+
+- **Language**: Python 3.12+
 - **AI/ML**: PyTorch, Ultralytics, EasyOCR, OpenCV
 - **Image Processing**: Pillow, ColorThief, scikit-image
 - **Font Handling**: fontTools, Wand

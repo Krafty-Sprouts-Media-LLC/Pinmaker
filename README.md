@@ -24,7 +24,7 @@ A production-ready AI-powered Pinterest template generator that analyzes uploade
 
 ### System Requirements
 - Ubuntu 20.04+ or similar Linux distribution
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - 4GB+ RAM (8GB+ recommended for AI models)
 - 20GB+ disk space
@@ -71,7 +71,7 @@ chmod +x setup.sh
 
 The setup script will:
 - Install all system dependencies
-- Set up Python 3.11 and virtual environment
+- Set up Python 3.12 and virtual environment
 - Install AI libraries and dependencies
 - Build the React frontend
 - Configure Nginx with SSL
