@@ -311,7 +311,7 @@ const ElementEditor: React.FC<ElementEditorProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Border Radius</label>
           <input
             type="number"
-            value={localChanges.border_radius ?? imageElement.border_radius || 0}
+            value={(localChanges.border_radius ?? imageElement.border_radius) || 0}
             onChange={(e) => handleChange('border_radius', parseInt(e.target.value) || 0)}
             disabled={isLocked}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
