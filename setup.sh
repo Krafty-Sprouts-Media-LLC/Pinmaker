@@ -174,7 +174,7 @@ sudo chown -R $APP_USER:$APP_USER $APP_DIR
 log "Switching to user $APP_USER for application setup..."
 
 # Create a script to run as the app user
-cat > /tmp/user_setup.sh << 'EOF'
+cat > /home/$APP_USER/user_setup.sh << 'EOF'
 #!/bin/bash
 set -e
 
@@ -313,8 +313,11 @@ log "User setup completed successfully!"
 EOF
 
 # Make the script executable and run it as the app user
-chmod +x /tmp/user_setup.sh
-sudo -u $APP_USER bash /tmp/user_setup.sh
+chmod +x /home/$APP_USER/user_setup.sh
+sudo -u $APP_USER bash /home/$APP_USER/user_setup.sh
+
+# Clean up the temporary script
+rm -f /home/$APP_USER/user_setup.sh
 
 # Create systemd service
 log "Creating systemd service..."
