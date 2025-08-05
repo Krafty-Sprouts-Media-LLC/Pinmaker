@@ -255,7 +255,7 @@ const ElementEditor: React.FC<ElementEditorProps> = ({
                 onClick={() => handleChange('text_align', align)}
                 disabled={isLocked}
                 className={`px-3 py-1 text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  (localChanges.text_align ?? textElement.text_align || 'left') === align
+                  ((localChanges.text_align ?? textElement.text_align) || 'left') === align
                     ? 'bg-blue-100 text-blue-700'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
