@@ -1,0 +1,48 @@
+/* App.css - Main application styles */
+
+.App {
+  text-align: center;
+}
+
+/* Additional custom styles can be added here */
+/* Most styling is handled by Tailwind CSS classes in the JSX */
+
+/* Smooth transitions for interactive elements */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ensure proper font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
