@@ -38,8 +38,11 @@ GIT_BRANCH="main"
 DEPLOY_LOG="/opt/Pinmaker/logs/deploy.log"
 MAINTENANCE_FILE="/opt/Pinmaker/maintenance.html"
 
-# Test configuration - set to "skip" or leave empty to skip tests
-TEST=""
+# Test configuration - set to "skip" to always skip, empty for intelligent caching, or any value to always run
+TEST="smart"
+
+# Test cache file to track last successful test run
+TEST_CACHE_FILE="$APP_DIR/.test_cache"
 
 # Ensure log directory exists
 mkdir -p "$(dirname $DEPLOY_LOG)"
@@ -383,34 +386,78 @@ build_frontend() {
     log_deploy "Frontend built successfully"
 }
 
+check_test_cache() {
+    local current_commit=$(git rev-parse HEAD)
+    
+    # Check if test cache file exists and contains current commit
+    if [ -f "$TEST_CACHE_FILE" ]; then
+        local cached_commit=$(cat "$TEST_CACHE_FILE" 2>/dev/null || echo "")
+        if [ "$cached_commit" = "$current_commit" ]; then
+            log_deploy "Tests already passed for commit $current_commit - skipping tests"
+            return 0
+        else
+            log_deploy "New commit detected ($current_commit vs cached $cached_commit) - tests required"
+            return 1
+        fi
+    else
+        log_deploy "No test cache found - tests required"
+        return 1
+    fi
+}
+
+update_test_cache() {
+    local current_commit=$(git rev-parse HEAD)
+    echo "$current_commit" > "$TEST_CACHE_FILE"
+    log_deploy "Updated test cache with successful commit: $current_commit"
+}
+
 run_tests() {
-    # Skip tests if TEST variable is empty or set to "skip"
-    if [ -z "$TEST" ] || [ "$TEST" = "skip" ]; then
-        log_deploy "Skipping tests (TEST variable is empty or set to skip)"
+    cd "$APP_DIR"
+    
+    # Skip tests completely if TEST variable is set to "skip"
+    if [ "$TEST" = "skip" ]; then
+        log_deploy "Skipping tests (TEST variable set to skip)"
         return 0
+    fi
+    
+    # Use intelligent test caching for empty TEST or "smart" mode
+    if [ -z "$TEST" ] || [ "$TEST" = "smart" ]; then
+        if check_test_cache; then
+            return 0
+        fi
     fi
     
     log_deploy "Running tests..."
     
-    cd "$APP_DIR"
     source venv/bin/activate
+    
+    local test_failed=false
     
     # Run Python tests if they exist
     if [ -f "pytest.ini" ] || [ -d "tests" ]; then
         log_deploy "Running Python tests..."
-        python -m pytest tests/ -v || {
-            warn "Some Python tests failed, but continuing deployment"
-        }
+        if ! python -m pytest tests/ -v; then
+            warn "Python tests failed"
+            test_failed=true
+        fi
     fi
     
     # Run frontend tests if they exist
     if [ -f "frontend/package.json" ] && grep -q '"test"' frontend/package.json; then
         log_deploy "Running frontend tests..."
         cd frontend
-        npm test -- --watchAll=false || {
-            warn "Some frontend tests failed, but continuing deployment"
-        }
+        if ! npm test -- --watchAll=false; then
+            warn "Frontend tests failed"
+            test_failed=true
+        fi
         cd ..
+    fi
+    
+    if [ "$test_failed" = "true" ]; then
+        warn "Some tests failed, but continuing deployment"
+    else
+        log_deploy "All tests passed - updating test cache"
+        update_test_cache
     fi
     
     log_deploy "Tests completed"
