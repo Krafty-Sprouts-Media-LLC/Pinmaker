@@ -122,7 +122,6 @@ class PreviewGenerator:
                     and rect_width == svg_root.attrib.get("width")
                     and rect_height == svg_root.attrib.get("height")
                 ):
-
                     fill_color = rect.attrib.get("fill")
                     if fill_color and fill_color.startswith("#"):
                         return fill_color

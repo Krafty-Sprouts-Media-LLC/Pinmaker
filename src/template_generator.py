@@ -394,7 +394,6 @@ class TemplateGenerator:
             # Find element by ID or content
             for element in root.iter():
                 if element.attrib.get("id") == element_id or element.text == element_id:
-
                     if "x" in new_pos:
                         element.attrib["x"] = str(new_pos["x"])
                     if "y" in new_pos:
