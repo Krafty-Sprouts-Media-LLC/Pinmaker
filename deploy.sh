@@ -30,14 +30,14 @@ info() {
 
 # Configuration
 APP_USER="pinmaker"
-APP_DIR="/home/$APP_USER"
+APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
 DOMAIN="pinmaker.kraftysprouts.com"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # Update with your repo
 GIT_BRANCH="main"
-BACKUP_DIR="/home/$APP_USER/backups"
-DEPLOY_LOG="/home/$APP_USER/logs/deploy.log"
-MAINTENANCE_FILE="/home/$APP_USER/maintenance.html"
+BACKUP_DIR="/opt/Pinmaker/backups"
+DEPLOY_LOG="/opt/Pinmaker/logs/deploy.log"
+MAINTENANCE_FILE="/opt/Pinmaker/maintenance.html"
 
 # Ensure log directory exists
 mkdir -p "$(dirname $DEPLOY_LOG)"
@@ -242,7 +242,7 @@ server {
     
     # Serve maintenance page
     location / {
-        root /home/pinmaker;
+        root /opt/Pinmaker;
         try_files /maintenance.html =503;
     }
     

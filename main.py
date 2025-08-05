@@ -35,7 +35,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/home/pinmaker/logs/app.log'),
+        logging.FileHandler('/opt/Pinmaker/logs/app.log'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # Application configuration
 class Config:
     # Paths
-    BASE_DIR = Path('/home/pinmaker')
+    BASE_DIR = Path('/opt/Pinmaker')
     UPLOAD_DIR = BASE_DIR / 'uploads'
     TEMPLATE_DIR = BASE_DIR / 'templates'
     PREVIEW_DIR = BASE_DIR / 'previews'

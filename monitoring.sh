@@ -60,7 +60,7 @@ sudo apt install -y \
 # Configure log rotation for application logs
 log "Configuring log rotation..."
 sudo tee /etc/logrotate.d/pinmaker > /dev/null << 'EOF'
-/home/pinmaker/logs/*.log {
+/opt/Pinmaker/logs/*.log {
     daily
     missingok
     rotate 30
@@ -100,8 +100,8 @@ sudo tee $APP_DIR/monitoring/system_monitor.sh > /dev/null << 'EOF'
 # Configuration
 APP_NAME="pinmaker"
 DOMAIN="pinmaker.kraftysprouts.com"
-LOG_FILE="/home/pinmaker/logs/monitor.log"
-ALERT_LOG="/home/pinmaker/logs/alerts.log"
+LOG_FILE="/opt/Pinmaker/logs/monitor.log"
+ALERT_LOG="/opt/Pinmaker/logs/alerts.log"
 EMAIL="admin@kraftysprouts.com"
 SLACK_WEBHOOK=""  # Add your Slack webhook URL
 
@@ -171,7 +171,7 @@ get_memory_usage() {
 }
 
 get_disk_usage() {
-    df /home/pinmaker | awk 'NR==2 {print $5}' | sed 's/%//'
+    df /opt/Pinmaker | awk 'NR==2 {print $5}' | sed 's/%//'
 }
 
 get_load_average() {
@@ -223,7 +223,7 @@ check_ssl_expiry() {
 
 check_log_errors() {
     local error_count
-    local app_log="/home/pinmaker/logs/error.log"
+    local app_log="/opt/Pinmaker/logs/error.log"
     local nginx_log="/var/log/nginx/pinmaker_error.log"
     
     # Check application errors in the last 5 minutes
@@ -254,7 +254,7 @@ check_disk_space() {
     fi
     
     # Check specific directories
-    for path in "/home/pinmaker/uploads" "/home/pinmaker/previews" "/home/pinmaker/logs"; do
+    for path in "/opt/Pinmaker/uploads" "/opt/Pinmaker/previews" "/opt/Pinmaker/logs"; do
         if [ -d "$path" ]; then
             local size=$(du -sh "$path" | cut -f1)
             local size_mb=$(du -sm "$path" | cut -f1)
@@ -286,7 +286,7 @@ check_process_count() {
 }
 
 generate_report() {
-    local report_file="/home/pinmaker/logs/daily_report_$(date +%Y%m%d).log"
+    local report_file="/opt/Pinmaker/logs/daily_report_$(date +%Y%m%d).log"
     
     {
         echo "=== Pinterest Template Generator Daily Report ==="
@@ -313,11 +313,11 @@ generate_report() {
         echo "Active Connections: $(ss -tun | grep :443 | wc -l)"
         echo ""
         echo "=== Disk Usage by Directory ==="
-        du -sh /home/pinmaker/* 2>/dev/null | sort -hr
+        du -sh /opt/Pinmaker/* 2>/dev/null | sort -hr
         echo ""
         echo "=== Recent Errors (last 24h) ==="
-        if [ -f "/home/pinmaker/logs/error.log" ]; then
-            grep "$(date +'%Y-%m-%d' -d 'yesterday')\|$(date +'%Y-%m-%d')" /home/pinmaker/logs/error.log | tail -10
+        if [ -f "/opt/Pinmaker/logs/error.log" ]; then
+        grep "$(date +'%Y-%m-%d' -d 'yesterday')\|$(date +'%Y-%m-%d')" /opt/Pinmaker/logs/error.log | tail -10
         fi
         echo ""
         echo "=== SSL Certificate Status ==="
@@ -380,9 +380,9 @@ check_log_errors
 check_process_count
 
 # Clean up old files
-find /home/pinmaker/uploads -type f -mtime +1 -delete 2>/dev/null || true
-find /home/pinmaker/previews -type f -mtime +7 -delete 2>/dev/null || true
-find /home/pinmaker/logs -name "*.log" -mtime +30 -delete 2>/dev/null || true
+find /opt/Pinmaker/uploads -type f -mtime +1 -delete 2>/dev/null || true
+find /opt/Pinmaker/previews -type f -mtime +7 -delete 2>/dev/null || true
+find /opt/Pinmaker/logs -name "*.log" -mtime +30 -delete 2>/dev/null || true
 
 # Generate daily report (only at midnight)
 if [ "$(date +%H%M)" = "0000" ]; then
@@ -404,8 +404,8 @@ sudo tee $APP_DIR/monitoring/performance_monitor.sh > /dev/null << 'EOF'
 # Pinterest Template Generator - Performance Monitor
 # This script monitors application performance metrics
 
-LOG_FILE="/home/pinmaker/logs/performance.log"
-METRICS_FILE="/home/pinmaker/logs/metrics.json"
+LOG_FILE="/opt/Pinmaker/logs/performance.log"
+METRICS_FILE="/opt/Pinmaker/logs/metrics.json"
 
 log_metric() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> $LOG_FILE
@@ -416,7 +416,7 @@ collect_metrics() {
     local timestamp=$(date +%s)
     local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}')
     local memory_usage=$(free | awk 'NR==2{printf "%.2f", $3*100/$2}')
-    local disk_usage=$(df /home/pinmaker | awk 'NR==2 {print $5}' | sed 's/%//')
+    local disk_usage=$(df /opt/Pinmaker | awk 'NR==2 {print $5}' | sed 's/%//')
     local load_avg=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
     
     # Application-specific metrics
@@ -440,10 +440,10 @@ collect_metrics() {
         "service_status": "$(systemctl is-active pinmaker)"
     },
     "files": {
-        "uploads_count": $(find /home/pinmaker/uploads -type f | wc -l),
-        "templates_count": $(find /home/pinmaker/templates -type f | wc -l),
-        "previews_count": $(find /home/pinmaker/previews -type f | wc -l),
-        "fonts_count": $(find /home/pinmaker/fonts -type f | wc -l)
+        "uploads_count": $(find /opt/Pinmaker/uploads -type f | wc -l),
+        "templates_count": $(find /opt/Pinmaker/templates -type f | wc -l),
+        "previews_count": $(find /opt/Pinmaker/previews -type f | wc -l),
+        "fonts_count": $(find /opt/Pinmaker/fonts -type f | wc -l)
     }
 }
 METRICS_EOF
@@ -481,10 +481,10 @@ sudo tee $APP_DIR/monitoring/log_analyzer.sh > /dev/null << 'EOF'
 # Pinterest Template Generator - Log Analyzer
 # This script analyzes logs and generates insights
 
-APP_LOG="/home/pinmaker/logs/app.log"
+APP_LOG="/opt/Pinmaker/logs/app.log"
 ACCESS_LOG="/var/log/nginx/pinmaker_access.log"
 ERROR_LOG="/var/log/nginx/pinmaker_error.log"
-ANALYSIS_LOG="/home/pinmaker/logs/log_analysis.log"
+ANALYSIS_LOG="/opt/Pinmaker/logs/log_analysis.log"
 
 analyze_access_log() {
     if [ ! -f "$ACCESS_LOG" ]; then
@@ -577,19 +577,19 @@ log "Setting up monitoring cron jobs..."
 (crontab -u $APP_USER -l 2>/dev/null; cat << 'CRON_EOF'
 # Pinterest Template Generator Monitoring
 # System monitoring every 5 minutes
-*/5 * * * * /home/pinmaker/monitoring/system_monitor.sh
+*/5 * * * * /opt/Pinmaker/monitoring/system_monitor.sh
 
 # Performance monitoring every minute
-* * * * * /home/pinmaker/monitoring/performance_monitor.sh
+* * * * * /opt/Pinmaker/monitoring/performance_monitor.sh
 
 # Log analysis daily at 1 AM
-0 1 * * * /home/pinmaker/monitoring/log_analyzer.sh
+0 1 * * * /opt/Pinmaker/monitoring/log_analyzer.sh
 
 # Backup daily at 2 AM
-0 2 * * * /home/pinmaker/backup.sh
+0 2 * * * /opt/Pinmaker/backup.sh
 
 # Clean up old monitoring logs weekly
-0 3 * * 0 find /home/pinmaker/logs -name "daily_report_*.log" -mtime +30 -delete
+0 3 * * 0 find /opt/Pinmaker/logs -name "daily_report_*.log" -mtime +30 -delete
 CRON_EOF
 ) | crontab -u $APP_USER -
 
@@ -679,7 +679,7 @@ while true; do
     echo "Load Average: $(uptime | awk -F'load average:' '{print $2}')"
     echo "CPU Usage: $(top -bn1 | grep 'Cpu(s)' | awk '{print $2}')%"
     echo "Memory Usage: $(free | awk 'NR==2{printf "%.1f%%", $3*100/$2}')"
-    echo "Disk Usage: $(df /home/pinmaker | awk 'NR==2 {print $5}')"
+    echo "Disk Usage: $(df /opt/Pinmaker | awk 'NR==2 {print $5}')"
     echo ""
     
     # Service Status
@@ -710,10 +710,10 @@ while true; do
     echo "=== APPLICATION METRICS ==="
     echo "Python Processes: $(pgrep -f 'python.*main:app' | wc -l)"
     echo "Active Connections: $(ss -tun | grep :443 | wc -l)"
-    echo "Uploads: $(find /home/pinmaker/uploads -type f | wc -l) files"
-    echo "Templates: $(find /home/pinmaker/templates -type f | wc -l) files"
-    echo "Previews: $(find /home/pinmaker/previews -type f | wc -l) files"
-    echo "Custom Fonts: $(find /home/pinmaker/fonts -type f | wc -l) files"
+    echo "Uploads: $(find /opt/Pinmaker/uploads -type f | wc -l) files"
+    echo "Templates: $(find /opt/Pinmaker/templates -type f | wc -l) files"
+    echo "Previews: $(find /opt/Pinmaker/previews -type f | wc -l) files"
+    echo "Custom Fonts: $(find /opt/Pinmaker/fonts -type f | wc -l) files"
     echo ""
     
     # Recent Activity
@@ -726,8 +726,8 @@ while true; do
     
     # Alerts
     echo "=== RECENT ALERTS ==="
-    if [ -f "/home/pinmaker/logs/alerts.log" ]; then
-        tail -3 /home/pinmaker/logs/alerts.log
+    if [ -f "/opt/Pinmaker/logs/alerts.log" ]; then
+        tail -3 /opt/Pinmaker/logs/alerts.log
     else
         echo "No recent alerts"
     fi

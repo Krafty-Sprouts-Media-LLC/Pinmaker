@@ -3,7 +3,7 @@
 # Pinterest Template Generator - Complete VPS Setup Script
 # Domain: pinmaker.kraftysprouts.com
 # User: pinmaker
-# App Directory: /home/pinmaker/
+# App Directory: /opt/Pinmaker/
 
 set -e  # Exit on any error
 
@@ -36,7 +36,7 @@ fi
 # Configuration
 APP_USER="pinmaker"
 APP_DOMAIN="pinmaker.kraftysprouts.com"
-APP_DIR="/home/$APP_USER"
+APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # Update with your repo
 PYTHON_VERSION="3.11"
@@ -239,11 +239,11 @@ DOMAIN=pinmaker.kraftysprouts.com
 BASE_URL=https://pinmaker.kraftysprouts.com
 
 # File paths
-UPLOADS_DIR=/home/pinmaker/uploads
-TEMPLATES_DIR=/home/pinmaker/templates
-PREVIEWS_DIR=/home/pinmaker/previews
-FONTS_DIR=/home/pinmaker/fonts
-STATIC_DIR=/home/pinmaker/app/static
+UPLOADS_DIR=/opt/Pinmaker/uploads
+TEMPLATES_DIR=/opt/Pinmaker/templates
+PREVIEWS_DIR=/opt/Pinmaker/previews
+FONTS_DIR=/opt/Pinmaker/fonts
+STATIC_DIR=/opt/Pinmaker/static
 
 # File size limits (in MB)
 MAX_UPLOAD_SIZE=50
@@ -256,13 +256,13 @@ MAX_FONT_SIZE=10
 # PIXABAY_API_KEY=your_pixabay_key
 
 # AI Model settings
-MODEL_CACHE_DIR=/home/pinmaker/app/models
+MODEL_CACHE_DIR=/opt/Pinmaker/models
 USE_GPU=true
 BATCH_SIZE=1
 
 # Logging
 LOG_LEVEL=INFO
-LOG_FILE=/home/pinmaker/logs/app.log
+LOG_FILE=/opt/Pinmaker/logs/app.log
 LOG_MAX_SIZE=100MB
 LOG_BACKUP_COUNT=5
 
@@ -358,8 +358,8 @@ timeout = 120
 keepalive = 2
 
 # Logging
-accesslog = "/home/pinmaker/logs/access.log"
-errorlog = "/home/pinmaker/logs/error.log"
+accesslog = "/opt/Pinmaker/logs/access.log"
+errorlog = "/opt/Pinmaker/logs/error.log"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
@@ -368,7 +368,7 @@ proc_name = "pinmaker"
 
 # Server mechanics
 daemon = False
-pidfile = "/home/pinmaker/logs/gunicorn.pid"
+pidfile = "/opt/Pinmaker/logs/gunicorn.pid"
 user = "pinmaker"
 group = "pinmaker"
 tmp_upload_dir = None
@@ -599,7 +599,7 @@ sudo -u $APP_USER tee $APP_DIR/backup.sh > /dev/null << 'EOF'
 
 # Pinterest Template Generator Backup Script
 
-APP_DIR="/home/pinmaker"
+APP_DIR="/opt/Pinmaker"
 BACKUP_DIR="$APP_DIR/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_NAME="pinmaker_backup_$DATE"
@@ -637,7 +637,7 @@ sudo -u $APP_USER tee $APP_DIR/monitor.sh > /dev/null << 'EOF'
 # Pinterest Template Generator Monitoring Script
 
 APP_NAME="pinmaker"
-LOG_FILE="/home/pinmaker/logs/monitor.log"
+LOG_FILE="/opt/Pinmaker/logs/monitor.log"
 
 # Function to log with timestamp
 log_message() {
@@ -657,7 +657,7 @@ if ! systemctl is-active --quiet $APP_NAME; then
 fi
 
 # Check disk usage
-DISK_USAGE=$(df /home/pinmaker | awk 'NR==2 {print $5}' | sed 's/%//')
+DISK_USAGE=$(df /opt/Pinmaker | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ $DISK_USAGE -gt 80 ]; then
     log_message "WARNING: Disk usage is ${DISK_USAGE}%"
 fi
@@ -674,8 +674,8 @@ if ! curl -f -s http://localhost:8000/health > /dev/null; then
 fi
 
 # Clean up old temporary files
-find /home/pinmaker/uploads -type f -mtime +1 -delete 2>/dev/null
-find /home/pinmaker/previews -type f -mtime +7 -delete 2>/dev/null
+find /opt/Pinmaker/uploads -type f -mtime +1 -delete 2>/dev/null
+find /opt/Pinmaker/previews -type f -mtime +7 -delete 2>/dev/null
 EOF
 
 chmod +x $APP_DIR/monitor.sh
@@ -730,15 +730,15 @@ sudo -u $APP_USER tee $APP_DIR/deploy.sh > /dev/null << 'EOF'
 
 set -e
 
-APP_DIR="/home/pinmaker/app"
-BACKUP_DIR="/home/pinmaker/backups"
+APP_DIR="/opt/Pinmaker"
+BACKUP_DIR="/opt/Pinmaker/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 echo "Starting deployment..."
 
 # Create backup before deployment
 echo "Creating backup..."
-/home/pinmaker/backup.sh
+/opt/Pinmaker/backup.sh
 
 # Navigate to app directory
 cd $APP_DIR
