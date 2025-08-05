@@ -19,7 +19,7 @@ Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/opt/Pinmaker/.env
 
 # Main service command
-ExecStart=/opt/Pinmaker/venv/bin/python main.py
+ExecStart=/opt/Pinmaker/venv/bin/gunicorn main:app -c gunicorn.conf.py
 
 # Reload configuration
 ExecReload=/bin/kill -s HUP $MAINPID
