@@ -100,6 +100,7 @@ jobs:
           
           # Create backup before deployment
           echo "📦 Creating backup..."
+          chmod +x backup.sh || true
           ./backup.sh daily || echo "⚠️ Backup failed, continuing..."
           
           # Pull latest changes
@@ -109,6 +110,13 @@ jobs:
             echo "❌ Git pull failed"
             exit 1
           }
+          
+          # Setup virtual environment if missing
+          echo "🐍 Setting up Python environment..."
+          if [ ! -d "venv" ]; then
+            echo "Creating virtual environment..."
+            python3 -m venv venv
+          fi
           
           # Update Python dependencies
           echo "🐍 Updating Python dependencies..."
