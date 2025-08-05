@@ -547,7 +547,7 @@ verify_deployment() {
     sleep 10
     
     # Check health endpoint
-    local health_url="https://$DOMAIN/health"
+    local health_url="http://$DOMAIN/health"
     local max_attempts=30
     local attempt=1
     
@@ -568,7 +568,7 @@ verify_deployment() {
     done
     
     # Check main page
-    if curl -f -s --max-time 15 "https://$DOMAIN" >/dev/null; then
+    if curl -f -s --max-time 15 "http://$DOMAIN" >/dev/null; then
         log_deploy "Main page check passed"
     else
         warn "Main page check failed, but health endpoint is working"
