@@ -325,12 +325,12 @@ const ElementEditor: React.FC<ElementEditorProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
           <div className="flex items-center space-x-3">
             <ColorPicker
-              color={localChanges.background_color ?? imageElement.background_color || '#ffffff'}
+              color={(localChanges.background_color ?? imageElement.background_color) || '#ffffff'}
               onChange={(color) => handleChange('background_color', color)}
               disabled={isLocked}
             />
             <span className="text-sm text-gray-600 font-mono">
-              {localChanges.background_color ?? imageElement.background_color || '#ffffff'}
+              {(localChanges.background_color ?? imageElement.background_color) || '#ffffff'}
             </span>
           </div>
         </div>
@@ -352,21 +352,21 @@ const ElementEditor: React.FC<ElementEditorProps> = ({
                 fontSize: `${localChanges.font_size ?? (element as TextElement).font_size}px`,
                 fontWeight: localChanges.font_weight ?? (element as TextElement).font_weight,
                 color: localChanges.color ?? (element as TextElement).color,
-                textAlign: localChanges.text_align ?? (element as TextElement).text_align || 'left'
+                textAlign: (localChanges.text_align ?? (element as TextElement).text_align) || 'left'
               }}
               className="max-w-full"
             >
-              {localChanges.text ?? (element as TextElement).text || 'Sample text'}
+              {(localChanges.text ?? (element as TextElement).text) || 'Sample text'}
             </div>
           ) : (
             <div
               className="w-full h-16 border border-gray-300 rounded flex items-center justify-center text-xs text-gray-500"
               style={{
-                borderRadius: `${localChanges.border_radius ?? (element as ImageRegion).border_radius || 0}px`,
-                backgroundColor: localChanges.background_color ?? (element as ImageRegion).background_color || '#f3f4f6'
+                borderRadius: `${(localChanges.border_radius ?? (element as ImageRegion).border_radius) || 0}px`,
+                backgroundColor: (localChanges.background_color ?? (element as ImageRegion).background_color) || '#f3f4f6'
               }}
             >
-              {localChanges.placeholder_text ?? (element as ImageRegion).placeholder_text || 'Image placeholder'}
+              {(localChanges.placeholder_text ?? (element as ImageRegion).placeholder_text) || 'Image placeholder'}
             </div>
           )}
         </div>
