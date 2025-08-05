@@ -89,8 +89,13 @@ sudo apt install -y \
     python$PYTHON_VERSION \
     python$PYTHON_VERSION-dev \
     python$PYTHON_VERSION-venv \
-    python$PYTHON_VERSION-pip \
     python3-pip
+
+# Install pip for Python 3.12 manually
+log "Installing pip for Python $PYTHON_VERSION..."
+wget https://bootstrap.pypa.io/get-pip.py
+sudo python$PYTHON_VERSION get-pip.py
+rm get-pip.py
 
 # Install system dependencies for AI libraries
 log "Installing system dependencies for AI/CV libraries..."
