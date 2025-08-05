@@ -39,7 +39,7 @@ APP_DOMAIN="pinmaker.kraftysprouts.com"
 APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # Update with your repo
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="3.12"
 NODE_VERSION="18"
 
 log "Starting Pinterest Template Generator VPS Setup"
