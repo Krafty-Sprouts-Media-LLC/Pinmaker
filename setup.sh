@@ -28,9 +28,14 @@ error() {
     exit 1
 }
 
-# Check if running as root
-if [[ $EUID -eq 0 ]]; then
-   error "This script should not be run as root. Please run as a regular user with sudo privileges."
+# Check if running directly as root (not via sudo)
+if [[ $EUID -eq 0 && -z "$SUDO_USER" ]]; then
+   error "This script should not be run directly as root. Please run as a regular user with sudo privileges."
+fi
+
+# Check if sudo is available
+if ! command -v sudo &> /dev/null; then
+    error "sudo is required but not installed. Please install sudo first."
 fi
 
 # Configuration
