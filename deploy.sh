@@ -374,16 +374,23 @@ build_frontend() {
     
     cd "$APP_DIR/frontend"
     
+    # Ensure dependencies are installed
+    if [ ! -d "node_modules" ] || [ ! "$(ls -A node_modules)" ]; then
+        log_deploy "Node modules not found, installing dependencies..."
+        npm install
+    fi
+    
     # Build production frontend
     npm run build
     
-    # Verify build output
+    # Verify build output (Vite uses 'dist' directory)
     if [ ! -d "dist" ] || [ ! "$(ls -A dist)" ]; then
         error "Frontend build failed - no dist directory or empty"
         return 1
     fi
     
     log_deploy "Frontend built successfully"
+    cd "$APP_DIR"
 }
 
 check_test_cache() {
@@ -494,6 +501,13 @@ restart_services() {
         error "Please run: echo '$APP_USER ALL=(ALL) NOPASSWD: /bin/systemctl' | sudo tee /etc/sudoers.d/pinmaker-deploy"
         error "Or run the deployment manually with sudo privileges."
         return 1
+    fi
+    
+    # Install/update systemd service file
+    if [ -f "$APP_DIR/pinmaker.service" ]; then
+        log_deploy "Installing systemd service file..."
+        sudo cp "$APP_DIR/pinmaker.service" /etc/systemd/system/
+        sudo systemctl enable pinmaker
     fi
     
     # Reload systemd configuration
