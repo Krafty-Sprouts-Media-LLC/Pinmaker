@@ -292,13 +292,21 @@ fetch_latest_code() {
     # Get current commit before update
     local current_commit=$(git rev-parse HEAD)
     
-    # Use git pull instead of fetch/reset for password authentication
+    # Use git pull for private repository with token authentication
     log_deploy "Pulling latest changes from $GIT_REPO..."
+    
+    # Check if GitHub token is configured
+    if ! git config --get credential.helper >/dev/null 2>&1; then
+        log_deploy "Setting up Git credential helper for private repository..."
+        git config --global credential.helper store
+    fi
+    
     if ! git pull origin "$GIT_BRANCH"; then
-        error "Failed to pull latest changes. Please check:"
-        error "1. Internet connection"
-        error "2. Repository access permissions"
-        error "3. Git credentials (use: git config --global credential.helper store)"
+        error "Failed to pull latest changes from private repository. Please:"
+        error "1. Generate a GitHub Personal Access Token at: https://github.com/settings/tokens"
+        error "2. Use token as password when prompted (username: your-github-username)"
+        error "3. Or configure git with: git config --global credential.helper store"
+        error "4. Then run: git pull origin main (enter token when prompted)"
         return 1
     fi
     
