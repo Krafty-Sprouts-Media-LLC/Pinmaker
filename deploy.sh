@@ -233,12 +233,8 @@ MAINTENANCE_EOF
     sudo tee /etc/nginx/sites-available/pinmaker-maintenance > /dev/null << 'NGINX_MAINTENANCE_EOF'
 server {
     listen 80;
-    listen 443 ssl http2;
+    listen [::]:80;
     server_name pinmaker.kraftysprouts.com;
-    
-    # SSL configuration
-    ssl_certificate /etc/letsencrypt/live/pinmaker.kraftysprouts.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/pinmaker.kraftysprouts.com/privkey.pem;
     
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
