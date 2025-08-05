@@ -33,7 +33,7 @@ APP_USER="pinmaker"
 APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
 DOMAIN="pinmaker.kraftysprouts.com"
-GIT_REPO="git@github.com:Krafty-Sprouts-Media-LLC/Pinmaker.git"  # SSH format for authentication
+GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # HTTPS for password auth
 GIT_BRANCH="main"
 DEPLOY_LOG="/opt/Pinmaker/logs/deploy.log"
 MAINTENANCE_FILE="/opt/Pinmaker/maintenance.html"
@@ -289,23 +289,28 @@ fetch_latest_code() {
         git stash push -m "Auto-stash before deployment $(date -Iseconds)"
     fi
     
-    # Fetch latest changes
-    git fetch origin
-    
-    # Get current and target commits
+    # Get current commit before update
     local current_commit=$(git rev-parse HEAD)
-    local target_commit=$(git rev-parse "origin/$GIT_BRANCH")
+    
+    # Use git pull instead of fetch/reset for password authentication
+    log_deploy "Pulling latest changes from $GIT_REPO..."
+    if ! git pull origin "$GIT_BRANCH"; then
+        error "Failed to pull latest changes. Please check:"
+        error "1. Internet connection"
+        error "2. Repository access permissions"
+        error "3. Git credentials (use: git config --global credential.helper store)"
+        return 1
+    fi
+    
+    # Get target commit after update
+    local target_commit=$(git rev-parse HEAD)
     
     if [ "$current_commit" = "$target_commit" ]; then
         log_deploy "Already up to date with origin/$GIT_BRANCH"
         return 0
     fi
     
-    log_deploy "Updating from $current_commit to $target_commit"
-    
-    # Checkout target branch
-    git checkout "$GIT_BRANCH"
-    git reset --hard "origin/$GIT_BRANCH"
+    log_deploy "Updated from $current_commit to $target_commit"
     
     # Log changes
     log_deploy "Changes in this deployment:"
