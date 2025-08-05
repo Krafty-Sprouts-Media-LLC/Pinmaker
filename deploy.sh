@@ -363,6 +363,10 @@ install_dependencies() {
                 npm install
             }
         fi
+        
+        # Install additional required dependencies for Vite build
+        npm install vite @vitejs/plugin-react tailwindcss autoprefixer postcss @tailwindcss/forms @tailwindcss/typography @tailwindcss/aspect-ratio terser --save-dev
+        
         cd ..
     fi
     
