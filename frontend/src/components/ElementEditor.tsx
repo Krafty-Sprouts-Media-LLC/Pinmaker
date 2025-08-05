@@ -293,7 +293,7 @@ const ElementEditor: React.FC<ElementEditorProps> = ({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Image Fit</label>
           <select
-            value={localChanges.fit ?? imageElement.fit || 'cover'}
+            value={(localChanges.fit ?? imageElement.fit) || 'cover'}
             onChange={(e) => handleChange('fit', e.target.value)}
             disabled={isLocked}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
