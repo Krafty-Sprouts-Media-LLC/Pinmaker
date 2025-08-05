@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, RefreshCw, Share2, Settings, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Share2, Settings, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { PreviewPanelProps, PreviewOptions, TemplateData } from '../types';
+import { PreviewPanelProps, PreviewOptions } from '../types';
 import { generatePreview, downloadTemplate, downloadPreview } from '../services/api';
 
 const PreviewPanel: React.FC<PreviewPanelProps> = ({
@@ -34,7 +34,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // Generate initial preview
   useEffect(() => {
     generateInitialPreview();
-  }, [templateData.id]);
+  }, [templateData.id, generateInitialPreview]);
 
   const generateInitialPreview = async () => {
     try {

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { Palette, Pipette, RotateCcw } from 'lucide-react';
+import { Palette, RotateCcw } from 'lucide-react';
 import { ColorPickerProps } from '../types';
 
 const ColorPicker: React.FC<ColorPickerProps> = ({

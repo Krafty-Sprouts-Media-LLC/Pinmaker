@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Save, Download, Palette, Type, Move, RotateCcw, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { TemplateEditorProps, TemplateData, TemplateUpdate, TextElement, ImageRegion, FontInfo } from '../types';
+import { TemplateEditorProps, TemplateData, TemplateUpdate } from '../types';
 import { generateTemplate, updateTemplate } from '../services/api';
-import ColorPicker from './ColorPicker';
-import FontSelector from './FontSelector';
+
 import ElementEditor from './ElementEditor';
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({

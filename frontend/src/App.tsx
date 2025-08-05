@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { Upload, Download, Palette, Type, Image, Settings } from 'lucide-react';
+import { Upload, Download, Palette, Type, Settings } from 'lucide-react';
 import ImageUpload from './components/ImageUpload';
 import TemplateEditor from './components/TemplateEditor';
 import PreviewPanel from './components/PreviewPanel';

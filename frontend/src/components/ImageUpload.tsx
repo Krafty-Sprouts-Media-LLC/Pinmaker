@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Image, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { ImageUploadProps, AnalysisResult, SUPPORTED_IMAGE_FORMATS, MAX_FILE_SIZE } from '../types';
+import { ImageUploadProps, SUPPORTED_IMAGE_FORMATS, MAX_FILE_SIZE } from '../types';
 import { analyzeImage } from '../services/api';
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ 
@@ -38,7 +38,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     // Start analysis
     await handleAnalyzeImage(file);
-  }, []);
+  }, [handleAnalyzeImage]);
 
   const handleAnalyzeImage = async (file: File) => {
     try {

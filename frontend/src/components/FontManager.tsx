@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, X, Trash2, Download, Eye, EyeOff, Type, FileText, AlertCircle } from 'lucide-react';
+import { Upload, X, Trash2, Eye, EyeOff, Type, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { FontManagerProps, FontInfo, FontUploadResult } from '../types';
