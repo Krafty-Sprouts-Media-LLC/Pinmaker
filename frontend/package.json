@@ -1,6 +1,7 @@
 {
   "name": "pinmaker-frontend",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@types/react-color": "^3.0.6",
