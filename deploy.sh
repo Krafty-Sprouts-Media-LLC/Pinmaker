@@ -38,6 +38,9 @@ GIT_BRANCH="main"
 DEPLOY_LOG="/opt/Pinmaker/logs/deploy.log"
 MAINTENANCE_FILE="/opt/Pinmaker/maintenance.html"
 
+# Test configuration - set to "skip" or leave empty to skip tests
+TEST=""
+
 # Ensure log directory exists
 mkdir -p "$(dirname $DEPLOY_LOG)"
 
@@ -381,6 +384,12 @@ build_frontend() {
 }
 
 run_tests() {
+    # Skip tests if TEST variable is empty or set to "skip"
+    if [ -z "$TEST" ] || [ "$TEST" = "skip" ]; then
+        log_deploy "Skipping tests (TEST variable is empty or set to skip)"
+        return 0
+    fi
+    
     log_deploy "Running tests..."
     
     cd "$APP_DIR"
