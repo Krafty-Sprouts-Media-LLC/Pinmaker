@@ -351,18 +351,9 @@ install_dependencies() {
         log_deploy "Installing Node.js dependencies..."
         cd frontend
         
-        # Generate package-lock.json if it doesn't exist
-        if [ ! -f "package-lock.json" ]; then
-            log_deploy "Generating package-lock.json..."
-            npm install
-        else
-            # Use npm ci if package-lock.json exists, otherwise use npm install
-            npm ci --production=false || {
-                log_deploy "npm ci failed, falling back to npm install..."
-                rm -f package-lock.json
-                npm install
-            }
-        fi
+        # Always use npm install to ensure all dependencies are properly installed
+        log_deploy "Installing all dependencies..."
+        npm install
         
         # Install additional required dependencies for Vite build
         npm install vite@^5.4.0 @vitejs/plugin-react@^4.3.0 tailwindcss autoprefixer postcss @tailwindcss/forms @tailwindcss/typography @tailwindcss/aspect-ratio terser --save-dev
