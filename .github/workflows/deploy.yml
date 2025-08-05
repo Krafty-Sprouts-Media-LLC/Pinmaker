@@ -128,33 +128,10 @@ jobs:
           npm run build
           cd ..
           
-          # Run database migrations (if any)
-          echo "🗄️ Running migrations..."
-          # python manage.py migrate || echo "No migrations to run"
-          
-          # Install/update systemd service
-          echo "📦 Installing systemd service..."
-          sudo cp pinmaker.service /etc/systemd/system/
-          sudo systemctl daemon-reload
-          sudo systemctl enable pinmaker
-          
-          # Restart services
-          echo "🔄 Restarting services..."
-          sudo systemctl restart pinmaker
-          sudo systemctl restart nginx
-          
-          # Health check
-          echo "🏥 Performing health check..."
-          sleep 5
-          
-          # Check if services are running
-          if sudo systemctl is-active --quiet pinmaker; then
-            echo "✅ Pinmaker service is running"
-          else
-            echo "❌ Pinmaker service failed to start"
-            sudo journalctl -u pinmaker --no-pager -n 20
-            exit 1
-          fi
+          # Run deployment script
+          echo "🚀 Running deployment script..."
+          chmod +x deploy.sh
+          ./deploy.sh
           
           if sudo systemctl is-active --quiet nginx; then
             echo "✅ Nginx service is running"
