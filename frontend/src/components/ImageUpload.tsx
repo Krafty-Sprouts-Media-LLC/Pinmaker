@@ -14,33 +14,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState<string>('');
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
-      return;
-    }
-
-    // Validate file type
-    if (!SUPPORTED_IMAGE_FORMATS.includes(file.type as any)) {
-      toast.error('Please upload a JPEG, PNG, or WebP image');
-      return;
-    }
-
-    setUploadedFile(file);
-    
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-
-    // Start analysis
-    await handleAnalyzeImage(file);
-  }, [handleAnalyzeImage]);
-
-  const handleAnalyzeImage = async (file: File) => {
+  const handleAnalyzeImage = useCallback(async (file: File) => {
     try {
       onLoadingChange(true);
       setAnalysisProgress('Uploading image...');
@@ -67,7 +41,33 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     } finally {
       onLoadingChange(false);
     }
-  };
+  }, [onLoadingChange, onImageAnalyzed]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
+      return;
+    }
+
+    // Validate file type
+    if (!SUPPORTED_IMAGE_FORMATS.includes(file.type as any)) {
+      toast.error('Please upload a JPEG, PNG, or WebP image');
+      return;
+    }
+
+    setUploadedFile(file);
+    
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+
+    // Start analysis
+    await handleAnalyzeImage(file);
+  }, [handleAnalyzeImage]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

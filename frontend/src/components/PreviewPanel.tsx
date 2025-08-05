@@ -31,12 +31,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const [showOptions, setShowOptions] = useState(false);
   const [previewHistory, setPreviewHistory] = useState<string[]>([]);
 
-  // Generate initial preview
-  useEffect(() => {
-    generateInitialPreview();
-  }, [templateData.id, generateInitialPreview]);
-
-  const generateInitialPreview = async () => {
+  const generateInitialPreview = useCallback(async () => {
     try {
       onLoadingChange(true);
       const preview = await generatePreview(templateData.id, previewOptions);
@@ -49,7 +44,12 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
     } finally {
       onLoadingChange(false);
     }
-  };
+  }, [templateData.id, previewOptions, onLoadingChange]);
+
+  // Generate initial preview
+  useEffect(() => {
+    generateInitialPreview();
+  }, [generateInitialPreview]);
 
   const regeneratePreview = async () => {
     try {
