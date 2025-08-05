@@ -7,15 +7,15 @@ aiofiles==24.1.0
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
-# Core AI and Computer Vision libraries (TESTED COMBINATION)
-torch==2.4.1
-torchvision==0.19.1
+# Core AI and Computer Vision libraries (PYTHON 3.12 COMPATIBLE)
+torch==2.5.1
+torchvision==0.20.1
 ultralytics==8.3.50
 easyocr==1.7.2
 opencv-python==4.10.0.84
-scikit-learn==1.5.2
-numpy==1.26.4
-Pillow==10.4.0
+scikit-learn==1.6.0
+numpy==2.0.2
+Pillow==11.0.0
 colorthief==0.2.1
 
 # Font handling and typography
@@ -36,8 +36,8 @@ httpx==0.28.1
 aiohttp==3.11.10
 
 # Advanced image processing
-scipy==1.14.1
-scikit-image==0.24.0
+scipy==1.15.0
+scikit-image==0.25.0
 mahotas==1.4.15
 imageio==2.36.1
 
@@ -57,7 +57,7 @@ python-levenshtein==0.23.0
 python-magic==0.4.27
 watchdog==3.0.0
 filetype==1.2.0
-pathlibutil==0.2.12
+pathlibutil==0.3.5
 
 # Configuration and environment
 python-dotenv==1.0.0
@@ -85,7 +85,7 @@ cerberus==1.3.5
 marshmallow==3.20.1
 
 # Data handling
-pandas==2.1.3
+pandas==2.2.3
 orjson==3.9.10
 ujson==5.8.0
 
