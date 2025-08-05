@@ -69,7 +69,7 @@ const FontManager: React.FC<FontManagerProps> = ({
   });
 
   const handleDeleteFont = async (fontId: string) => {
-    if (!confirm('Are you sure you want to delete this font?')) {
+    if (!window.confirm('Are you sure you want to delete this font?')) {
       return;
     }
 
