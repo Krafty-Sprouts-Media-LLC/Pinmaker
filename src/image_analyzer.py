@@ -469,7 +469,9 @@ class ImageAnalyzer:
             bg_type = (
                 "solid"
                 if bg_variance < 1000
-                else "gradient" if bg_variance < 5000 else "pattern"
+                else "gradient"
+                if bg_variance < 5000
+                else "pattern"
             )
 
             return {
