@@ -98,10 +98,7 @@ jobs:
             exit 1
           }
           
-          # Create backup before deployment
-          echo "📦 Creating backup..."
-          chmod +x backup.sh || true
-          ./backup.sh daily || echo "⚠️ Backup failed, continuing..."
+          # Backup functionality removed for simplified deployment
           
           # Pull latest changes
           echo "📥 Pulling latest changes..."
@@ -171,23 +168,4 @@ jobs:
           
           echo "🎉 Deployment completed successfully!"
 
-  rollback:
-    runs-on: ubuntu-latest
-    if: failure() && github.ref == 'refs/heads/main'
-    needs: deploy
-    
-    steps:
-    - name: Rollback deployment
-      uses: appleboy/ssh-action@v1.1.0
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        password: ${{ secrets.VPS_PASSWORD }}
-        port: ${{ secrets.VPS_PORT || 22 }}
-        debug: true
-        command_timeout: 10m
-        script: |
-          echo "🔄 Rolling back deployment..."
-          cd /opt/Pinmaker
-          ./deploy.sh rollback
-          echo "✅ Rollback completed"
+  # Rollback functionality removed for simplified deployment

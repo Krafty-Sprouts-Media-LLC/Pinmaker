@@ -35,7 +35,6 @@ APP_NAME="pinmaker"
 DOMAIN="pinmaker.kraftysprouts.com"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"  # Update with your repo
 GIT_BRANCH="main"
-BACKUP_DIR="/opt/Pinmaker/backups"
 DEPLOY_LOG="/opt/Pinmaker/logs/deploy.log"
 MAINTENANCE_FILE="/opt/Pinmaker/maintenance.html"
 
@@ -277,40 +276,7 @@ disable_maintenance_mode() {
     log_deploy "Maintenance mode disabled"
 }
 
-create_deployment_backup() {
-    log_deploy "Creating pre-deployment backup..."
-    
-    local backup_name="pre_deploy_$(date +%Y%m%d_%H%M%S)"
-    local backup_path="$BACKUP_DIR/deployments/$backup_name"
-    
-    mkdir -p "$BACKUP_DIR/deployments"
-    mkdir -p "$backup_path"
-    
-    # Backup current application
-    if [ -d "$APP_DIR" ]; then
-        tar -czf "$backup_path/app_backup.tar.gz" \
-            --exclude="$APP_DIR/backups" \
-            --exclude="$APP_DIR/logs" \
-            --exclude="$APP_DIR/uploads" \
-            --exclude="$APP_DIR/previews" \
-            --exclude="$APP_DIR/venv" \
-            --exclude="$APP_DIR/.git" \
-            --exclude="$APP_DIR/node_modules" \
-            --exclude="$APP_DIR/frontend/dist" \
-            --exclude="$APP_DIR/frontend/node_modules" \
-            -C "$APP_DIR" .
-    fi
-    
-    # Save current git commit
-    if [ -d "$APP_DIR/.git" ]; then
-        cd "$APP_DIR"
-        git rev-parse HEAD > "$backup_path/git_commit.txt"
-        git status --porcelain > "$backup_path/git_status.txt"
-    fi
-    
-    echo "$backup_path" > "/tmp/last_deployment_backup"
-    log_deploy "Pre-deployment backup created: $backup_name"
-}
+# Backup functionality removed for simplified deployment
 
 fetch_latest_code() {
     log_deploy "Fetching latest code from repository..."
@@ -507,57 +473,9 @@ verify_deployment() {
     log_deploy "Deployment verification completed successfully"
 }
 
-rollback_deployment() {
-    local backup_path="$1"
-    
-    error "Rolling back deployment..."
-    
-    if [ -f "/tmp/last_deployment_backup" ]; then
-        backup_path=$(cat /tmp/last_deployment_backup)
-    fi
-    
-    if [ -z "$backup_path" ] || [ ! -d "$backup_path" ]; then
-        error "No backup found for rollback"
-        return 1
-    fi
-    
-    log_deploy "Rolling back to backup: $(basename $backup_path)"
-    
-    # Stop services
-    sudo systemctl stop pinmaker
-    
-    # Restore from backup
-    if [ -f "$backup_path/app_backup.tar.gz" ]; then
-        cd "$APP_DIR"
-        tar -xzf "$backup_path/app_backup.tar.gz"
-    fi
-    
-    # Restore git state
-    if [ -f "$backup_path/git_commit.txt" ]; then
-        cd "$APP_DIR"
-        git reset --hard "$(cat $backup_path/git_commit.txt)"
-    fi
-    
-    # Restart services
-    sudo systemctl start pinmaker
-    sudo systemctl restart nginx
-    
-    log_deploy "Rollback completed"
-}
+# Rollback functionality removed - no backups available
 
-cleanup_old_deployment_backups() {
-    log_deploy "Cleaning up old deployment backups..."
-    
-    # Keep only last 10 deployment backups
-    if [ -d "$BACKUP_DIR/deployments" ]; then
-        ls -t "$BACKUP_DIR/deployments/" | tail -n +11 | while read backup; do
-            if [ -d "$BACKUP_DIR/deployments/$backup" ]; then
-                log_deploy "Removing old deployment backup: $backup"
-                rm -rf "$BACKUP_DIR/deployments/$backup"
-            fi
-        done
-    fi
-}
+# Backup cleanup functionality removed
 
 send_deployment_notification() {
     local status="$1"
@@ -592,10 +510,6 @@ deploy() {
     # Check prerequisites
     check_prerequisites
     
-    # Create backup
-    create_deployment_backup
-    local backup_path=$(cat /tmp/last_deployment_backup)
-    
     # Enable maintenance mode
     enable_maintenance_mode
     
@@ -611,9 +525,6 @@ deploy() {
         # Disable maintenance mode
         disable_maintenance_mode
         
-        # Cleanup
-        cleanup_old_deployment_backups
-        
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         
@@ -621,17 +532,15 @@ deploy() {
         send_deployment_notification "SUCCESS" "Deployment completed successfully in ${duration}s"
         
     else
-        # Deployment failed, rollback
-        log_deploy "Deployment failed, initiating rollback..."
-        
-        rollback_deployment "$backup_path"
+        # Deployment failed
+        log_deploy "Deployment failed!"
         disable_maintenance_mode
         
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         
-        error "Deployment failed and rolled back in ${duration}s"
-        send_deployment_notification "FAILED" "Deployment failed and rolled back in ${duration}s"
+        error "Deployment failed in ${duration}s"
+        send_deployment_notification "FAILED" "Deployment failed in ${duration}s"
         
         exit 1
     fi
@@ -644,18 +553,9 @@ case "${1:-deploy}" in
         ;;
     
     "rollback")
-        if [ -z "$2" ]; then
-            # Use last deployment backup
-            if [ -f "/tmp/last_deployment_backup" ]; then
-                backup_path=$(cat /tmp/last_deployment_backup)
-                rollback_deployment "$backup_path"
-            else
-                error "No recent deployment backup found"
-                exit 1
-            fi
-        else
-            rollback_deployment "$2"
-        fi
+        error "Rollback functionality has been removed"
+        error "To revert changes, manually reset git or redeploy previous version"
+        exit 1
         ;;
     
     "status")
@@ -728,15 +628,12 @@ case "${1:-deploy}" in
         echo ""
         echo "Commands:"
         echo "  deploy              Deploy latest code (default)"
-        echo "  rollback [path]     Rollback to previous version"
         echo "  status              Show deployment status"
         echo "  logs                Show deployment logs"
         echo "  maintenance on|off  Enable/disable maintenance mode"
-        echo "  help                Show this help message"
         echo ""
         echo "Examples:"
         echo "  $0 deploy"
-        echo "  $0 rollback"
         echo "  $0 status"
         echo "  $0 maintenance on"
         ;;
