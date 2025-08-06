@@ -10,7 +10,7 @@ WARN_THRESHOLD=75  # Warning at 75%
 CRIT_THRESHOLD=85  # Critical at 85%
 LOG_FILE="/opt/Pinmaker/logs/disk-monitor.log"
 EMAIL_ALERTS=false  # Set to true to enable email alerts
-ADMIN_EMAIL="admin@kraftysprouts.com"
+ADMIN_EMAIL="hello@kraftysprouts.com"
 
 # Colors for output
 RED='\033[0;31m'
