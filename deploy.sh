@@ -265,7 +265,7 @@ NGINX_MAINTENANCE_EOF
     
     # Enable maintenance site
     sudo ln -sf /etc/nginx/sites-available/pinmaker-maintenance /etc/nginx/sites-enabled/pinmaker-maintenance
-    sudo rm -f /etc/nginx/sites-enabled/pinmaker
+    sudo rm -f /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com
     sudo nginx -t && sudo systemctl reload nginx
     
     log_deploy "Maintenance mode enabled"
@@ -285,7 +285,7 @@ disable_maintenance_mode() {
     
     # Restore original nginx configuration
     sudo rm -f /etc/nginx/sites-enabled/pinmaker-maintenance
-    sudo ln -sf /etc/nginx/sites-available/pinmaker /etc/nginx/sites-enabled/pinmaker
+    sudo ln -sf /etc/nginx/sites-available/pinmaker.kraftysprouts.com /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com
     sudo nginx -t && sudo systemctl reload nginx
     
     # Remove maintenance file
@@ -411,10 +411,10 @@ build_frontend() {
     
     log_deploy "Frontend built successfully"
     
-    # The built files are already in the correct location for nginx
-    # Nginx is configured to serve from /opt/Pinmaker/app/frontend/dist
-    # which matches our build output directory
-    log_deploy "Frontend files are ready for nginx serving from $APP_DIR/frontend/dist"
+    # Copy build files to static directory
+    log_deploy "Copying frontend build to static directory..."
+    mkdir -p ../static
+    cp -r dist/* ../static/
     
     cd "$APP_DIR"
 }
@@ -565,7 +565,7 @@ verify_deployment() {
     sleep 10
     
     # Check health endpoint
-    local health_url="http://$DOMAIN/health"
+    local health_url="http://localhost:8000/health"
     local max_attempts=30
     local attempt=1
     
@@ -585,8 +585,8 @@ verify_deployment() {
         ((attempt++))
     done
     
-    # Check main page
-    if curl -f -s --max-time 15 "http://$DOMAIN" >/dev/null; then
+    # Check main page via HTTPS
+    if curl -f -s --max-time 15 "https://$DOMAIN" >/dev/null; then
         log_deploy "Main page check passed"
     else
         warn "Main page check failed, but health endpoint is working"
@@ -689,7 +689,7 @@ case "${1:-deploy}" in
     
     "status")
         echo "Pinterest Template Generator Deployment Status"
-        echo "============================================="
+        echo "=============================================="
         echo "Domain: $DOMAIN"
         echo "App Directory: $APP_DIR"
         echo "Current User: $(whoami)"
