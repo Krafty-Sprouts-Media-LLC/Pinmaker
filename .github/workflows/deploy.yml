@@ -133,20 +133,13 @@ jobs:
           chmod +x deploy.sh
           ./deploy.sh
           
-          if sudo systemctl is-active --quiet nginx; then
-            echo "✅ Nginx service is running"
-          else
-            echo "❌ Nginx service failed to start"
-            sudo journalctl -u nginx --no-pager -n 20
-            exit 1
-          fi
-          
-          # Test application endpoint
+          # Test application endpoint (deploy.sh handles service management)
           echo "🌐 Testing application endpoint..."
+          sleep 5  # Give services time to start
           if curl -f -s http://localhost:8000/health > /dev/null; then
             echo "✅ Application is responding"
           else
-            echo "⚠️ Application health check failed, but services are running"
+            echo "⚠️ Application health check failed, but deployment script completed"
           fi
           
           echo "🎉 Deployment completed successfully!"
