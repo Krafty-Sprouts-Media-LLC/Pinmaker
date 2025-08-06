@@ -86,6 +86,13 @@ check_prerequisites() {
 enable_maintenance_mode() {
     log_deploy "Enabling maintenance mode..."
     
+    # Check if we can use sudo without password
+    if ! sudo -n true 2>/dev/null; then
+        log_deploy "Warning: Cannot enable maintenance mode - sudo requires password"
+        log_deploy "Skipping maintenance mode and proceeding with deployment..."
+        return 0
+    fi
+    
     # Create maintenance page
     cat > "$MAINTENANCE_FILE" << 'MAINTENANCE_EOF'
 <!DOCTYPE html>
@@ -266,6 +273,15 @@ NGINX_MAINTENANCE_EOF
 
 disable_maintenance_mode() {
     log_deploy "Disabling maintenance mode..."
+    
+    # Check if we can use sudo without password
+    if ! sudo -n true 2>/dev/null; then
+        log_deploy "Warning: Cannot disable maintenance mode - sudo requires password"
+        log_deploy "Skipping maintenance mode cleanup..."
+        # Still remove maintenance file if it exists
+        rm -f "$MAINTENANCE_FILE"
+        return 0
+    fi
     
     # Restore original nginx configuration
     sudo rm -f /etc/nginx/sites-enabled/pinmaker-maintenance
@@ -501,10 +517,10 @@ restart_services() {
     
     # Check if user has passwordless sudo for systemctl
     if ! sudo -n systemctl daemon-reload 2>/dev/null; then
-        error "This script requires passwordless sudo for systemctl commands."
-        error "Please run: echo '$APP_USER ALL=(ALL) NOPASSWD: /bin/systemctl' | sudo tee /etc/sudoers.d/pinmaker-deploy"
-        error "Or run the deployment manually with sudo privileges."
-        return 1
+        log_deploy "Warning: Cannot restart services - sudo requires password"
+        log_deploy "Services will need to be restarted manually after deployment"
+        log_deploy "Please run: sudo systemctl restart pinmaker nginx"
+        return 0
     fi
     
     # Install/update systemd service file
