@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Fix Pinmaker Backend Permission Issues
-# This script resolves the permission denied errors preventing the backend from starting
+# Fix Pinmaker Backend Permission Issues - Updated Version
+# This script resolves the remaining permission denied errors preventing the backend from starting
 
-echo "🔧 Fixing Pinmaker Backend Permission Issues..."
+echo "🔧 Fixing Pinmaker Backend Permission Issues (Updated)..."
 
 # Stop the service first
 echo "⏹️ Stopping pinmaker service..."
@@ -22,10 +22,38 @@ sudo mkdir -p /home/pinmaker/.config/matplotlib
 sudo chown -R pinmaker:pinmaker /home/pinmaker/.config
 sudo chmod -R 755 /home/pinmaker/.config
 
-# Fix Ultralytics config directory
+# Fix Ultralytics config directory and create settings file
+echo "🔧 Fixing Ultralytics configuration..."
 sudo mkdir -p /home/pinmaker/.config/Ultralytics
 sudo chown -R pinmaker:pinmaker /home/pinmaker/.config/Ultralytics
 sudo chmod -R 755 /home/pinmaker/.config/Ultralytics
+
+# Remove any existing problematic settings file and create a new one
+sudo rm -f /home/pinmaker/.config/Ultralytics/settings.json
+sudo -u pinmaker touch /home/pinmaker/.config/Ultralytics/settings.json
+sudo -u pinmaker chmod 644 /home/pinmaker/.config/Ultralytics/settings.json
+
+# Create a basic Ultralytics settings file
+sudo -u pinmaker tee /home/pinmaker/.config/Ultralytics/settings.json > /dev/null << 'EOF'
+{
+    "settings_version": "0.0.6",
+    "datasets_dir": "/tmp",
+    "weights_dir": "/tmp",
+    "runs_dir": "/tmp",
+    "uuid": "",
+    "sync": true,
+    "api_key": "",
+    "clearml": true,
+    "comet": true,
+    "dvc": true,
+    "hub": true,
+    "mlflow": true,
+    "neptune": true,
+    "raytune": true,
+    "tensorboard": true,
+    "wandb": true
+}
+EOF
 
 # Ensure the application directory has correct permissions
 echo "📂 Fixing application directory permissions..."
@@ -49,6 +77,10 @@ PYTHONPATH=/opt/Pinmaker
 
 # Working directory
 WORKDIR=/opt/Pinmaker
+
+# Temporary directories for AI models
+TEMP=/tmp
+TMPDIR=/tmp
 EOF
 
 sudo mv /tmp/pinmaker.env /opt/Pinmaker/.env
@@ -71,15 +103,15 @@ EnvironmentFile=/opt/Pinmaker/.env
 ExecStart=/opt/Pinmaker/venv/bin/gunicorn -c gunicorn.conf.py main:app
 Restart=always
 RestartSec=10
-WatchdogSec=30
+WatchdogSec=60
 NotifyAccess=all
 
 # Security settings
 NoNewPrivileges=true
-PrivateTmp=true
+PrivateTmp=false
 ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/opt/Pinmaker /home/pinmaker/.config /home/pinmaker/.EasyOCR /tmp
+ProtectHome=false
+ReadWritePaths=/opt/Pinmaker /home/pinmaker /tmp
 
 # Resource limits
 LimitNOFILE=65536
@@ -98,7 +130,7 @@ sudo systemctl enable pinmaker
 sudo systemctl start pinmaker
 
 # Wait a moment for the service to start
-sleep 5
+sleep 10
 
 # Check service status
 echo "📊 Checking service status..."
@@ -110,8 +142,8 @@ if curl -f http://localhost:8000/health 2>/dev/null; then
     echo "✅ Backend is now running successfully!"
     echo "🌐 Website should be accessible at: https://pinmaker.kraftysprouts.com"
 else
-    echo "❌ Health check failed. Checking logs..."
-    sudo journalctl -u pinmaker --lines=20 --no-pager
+    echo "❌ Health check failed. Checking recent logs..."
+    sudo journalctl -u pinmaker --lines=30 --no-pager
 fi
 
-echo "🎉 Permission fix script completed!"
+echo "🎉 Updated permission fix script completed!"
