@@ -95,7 +95,7 @@ else
 fi
 
 # Step 9: Obtain SSL certificates
-log "🔒 Obtaining SSL certificates..."
+log "🔒 Obtaining SSL certificates for both $DOMAIN and www.$DOMAIN..."
 if sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --email $EMAIL --redirect; then
     log "✅ SSL certificates obtained successfully"
     
@@ -129,6 +129,7 @@ curl -I http://localhost/health 2>/dev/null || echo "Health check failed"
 log "🎉 SSL setup fix completed!"
 log "📝 Next steps:"
 log "   1. Check your domain DNS settings point to this server"
-log "   2. Test access: http://$DOMAIN"
-log "   3. If SSL was successful, test: https://$DOMAIN"
-log "   4. Monitor logs: sudo journalctl -u pinmaker -f"
+log "   2. Test access: http://$DOMAIN and http://www.$DOMAIN"
+log "   3. If SSL was successful, test: https://$DOMAIN and https://www.$DOMAIN"
+log "   4. Both www and non-www versions should redirect to https://$DOMAIN"
+log "   5. Monitor logs: sudo journalctl -u pinmaker -f"
