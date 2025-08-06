@@ -1,1 +1,1 @@
-Trigger deployment - service worker fix
+Trigger deployment - frontend build fix and image analysis error resolution
