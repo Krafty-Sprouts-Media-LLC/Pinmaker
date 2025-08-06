@@ -410,6 +410,12 @@ build_frontend() {
     fi
     
     log_deploy "Frontend built successfully"
+    
+    # The built files are already in the correct location for nginx
+    # Nginx is configured to serve from /opt/Pinmaker/app/frontend/dist
+    # which matches our build output directory
+    log_deploy "Frontend files are ready for nginx serving from $APP_DIR/frontend/dist"
+    
     cd "$APP_DIR"
 }
 
