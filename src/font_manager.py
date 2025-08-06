@@ -10,8 +10,8 @@ import base64
 
 
 class FontManager:
-    def __init__(self):
-        self.fonts_dir = Path("fonts")
+    def __init__(self, font_dir: Optional[str] = None):
+        self.fonts_dir = Path(font_dir) if font_dir else Path("fonts")
         self.fonts_dir.mkdir(exist_ok=True)
 
         self.font_registry_file = self.fonts_dir / "font_registry.json"
