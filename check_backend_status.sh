@@ -1,52 +1,31 @@
 #!/bin/bash
 
-# Backend Status Check and Restart Script
-# This script checks if the backend is running and restarts it if necessary
+# Check Backend Status Script
+# This script checks the status of the Pinmaker backend service
 
-echo "🔍 Checking Pinmaker Backend Status..."
+echo "📊 Checking Pinmaker Backend Status..."
 
-# Check if the service is running
-echo "📊 Service Status:"
-sudo systemctl status pinmaker --no-pager
-
-echo ""
-echo "🌐 Testing Health Endpoint:"
-if curl -f http://localhost:8000/health 2>/dev/null; then
-    echo "✅ Backend is responding successfully!"
-    echo "🎉 No action needed - service is healthy"
-else
-    echo "❌ Backend health check failed"
-    echo "🔄 Attempting to restart the service..."
-    
-    # Stop the service
-    sudo systemctl stop pinmaker
-    sleep 3
-    
-    # Start the service
-    sudo systemctl start pinmaker
-    sleep 10
-    
-    # Check status again
-    echo "📊 Service Status After Restart:"
-    sudo systemctl status pinmaker --no-pager
-    
-    echo ""
-    echo "🏥 Testing Health Endpoint Again:"
-    if curl -f http://localhost:8000/health 2>/dev/null; then
-        echo "✅ Backend is now responding successfully!"
-        echo "🌐 Website should be accessible at: https://pinmaker.kraftysprouts.com"
-    else
-        echo "❌ Backend still not responding. Checking logs..."
-        sudo journalctl -u pinmaker --lines=20 --no-pager
-    fi
-fi
+# Check if service is running
+echo "🔍 Service Status:"
+sudo systemctl status pinmaker --no-pager -l
 
 echo ""
-echo "📈 Memory Usage:"
-free -h
+echo "🌐 Network Status:"
+echo "Port 8000 listening:"
+sudo netstat -tlnp | grep :8000 || echo "❌ Port 8000 not listening"
 
 echo ""
-echo "🔧 Process Information:"
-ps aux | grep -E '(gunicorn|pinmaker)' | grep -v grep
+echo "🏥 Health Check:"
+curl -f http://localhost:8000/health 2>/dev/null && echo "✅ Health check passed" || echo "❌ Health check failed"
 
-echo "🎯 Backend status check completed!"
+echo ""
+echo "📝 Recent Logs:"
+sudo journalctl -u pinmaker --no-pager -n 10
+
+echo ""
+echo "💾 Memory Usage:"
+ps aux | grep gunicorn | grep -v grep
+
+echo ""
+echo "📁 File Permissions:"
+ls -la /opt/Pinmaker/ | head -10
