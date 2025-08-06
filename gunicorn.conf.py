@@ -5,15 +5,16 @@ import os
 bind = "127.0.0.1:8000"
 backlog = 2048
 
-# Worker processes
-workers = multiprocessing.cpu_count() * 2 + 1
+# Worker processes (optimized for 4GB RAM)
+workers = 2  # Fixed to 2 workers for memory efficiency
 worker_class = "uvicorn.workers.UvicornWorker"
-worker_connections = 1000
-max_requests = 1000
+worker_connections = 100  # Reduced for memory efficiency
+max_requests = 500  # Restart workers after 500 requests to prevent memory leaks
 max_requests_jitter = 50
 preload_app = True
 timeout = 120
 keepalive = 2
+worker_tmp_dir = "/dev/shm"  # Use shared memory for better performance
 
 # Logging
 accesslog = "/opt/Pinmaker/logs/access.log"

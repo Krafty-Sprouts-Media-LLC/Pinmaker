@@ -265,7 +265,7 @@ NGINX_MAINTENANCE_EOF
     
     # Enable maintenance site
     sudo ln -sf /etc/nginx/sites-available/pinmaker-maintenance /etc/nginx/sites-enabled/pinmaker-maintenance
-    sudo rm -f /etc/nginx/sites-enabled/pinmaker
+    sudo rm -f /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com
     sudo nginx -t && sudo systemctl reload nginx
     
     log_deploy "Maintenance mode enabled"
@@ -285,7 +285,7 @@ disable_maintenance_mode() {
     
     # Restore original nginx configuration
     sudo rm -f /etc/nginx/sites-enabled/pinmaker-maintenance
-    sudo ln -sf /etc/nginx/sites-available/pinmaker /etc/nginx/sites-enabled/pinmaker
+    sudo ln -sf /etc/nginx/sites-available/pinmaker.kraftysprouts.com /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com
     sudo nginx -t && sudo systemctl reload nginx
     
     # Remove maintenance file
@@ -565,7 +565,7 @@ verify_deployment() {
     sleep 10
     
     # Check health endpoint
-    local health_url="http://$DOMAIN/health"
+    local health_url="http://localhost:8000/health"
     local max_attempts=30
     local attempt=1
     
@@ -585,8 +585,8 @@ verify_deployment() {
         ((attempt++))
     done
     
-    # Check main page
-    if curl -f -s --max-time 15 "http://$DOMAIN" >/dev/null; then
+    # Check main page via HTTPS
+    if curl -f -s --max-time 15 "https://$DOMAIN" >/dev/null; then
         log_deploy "Main page check passed"
     else
         warn "Main page check failed, but health endpoint is working"
