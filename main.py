@@ -118,7 +118,7 @@ async def lifespan(app: FastAPI):
 
         # Test API connections
         logger.info("Testing stock photo API connections...")
-        await stock_photo_service.test_connections()
+        await stock_photo_service.test_apis()
 
         logger.info("Application startup complete")
 
