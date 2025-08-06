@@ -13,8 +13,8 @@ from .stock_photo_service import StockPhotoService
 
 
 class PreviewGenerator:
-    def __init__(self):
-        self.stock_service = StockPhotoService()
+    def __init__(self, stock_photo_service=None):
+        self.stock_service = stock_photo_service or StockPhotoService()
         self.sample_content = {
             "{TITLE}": "Sample Title",
             "{SUBTITLE}": "Sample Subtitle",
