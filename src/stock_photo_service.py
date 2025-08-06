@@ -8,7 +8,9 @@ import json
 
 
 class StockPhotoService:
-    def __init__(self, unsplash_key: str = None, pexels_key: str = None, pixabay_key: str = None):
+    def __init__(
+        self, unsplash_key: str = None, pexels_key: str = None, pixabay_key: str = None
+    ):
         # API keys (can be passed as parameters or from environment variables)
         self.pixabay_key = pixabay_key or os.getenv("PIXABAY_API_KEY", "")
         self.unsplash_key = unsplash_key or os.getenv("UNSPLASH_ACCESS_KEY", "")
