@@ -125,12 +125,38 @@ CORS_ORIGINS = [
 ## Troubleshooting
 
 ### Build Failures
+
+#### Issue: "vite: not found" Error
+**Error Message:**
+```
+sh: 1: vite: not found
+Command failed with exit code 127: npm run build
+```
+
+**Root Cause:** Netlify is not installing dependencies before running the build command.
+
+**Solution:** Update `netlify.toml` to include explicit dependency installation:
+```toml
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"  # Changed from "npm run build"
+  publish = "frontend/dist"
+```
+
+**Alternative Solutions:**
+1. **Use npm ci instead of npm install** (faster, more reliable for CI/CD)
+2. **Check Node.js version compatibility** in netlify.toml
+3. **Verify package.json scripts** are correctly defined
+
+#### Other Common Build Issues
 ```bash
 # Check build logs in Netlify dashboard
 # Common issues:
 # 1. Missing environment variables
-# 2. Node version mismatch
-# 3. Build command errors
+# 2. Node version mismatch  
+# 3. Dependency installation failures
+# 4. Build command errors
+# 5. PostCSS/Tailwind configuration issues
 ```
 
 ### CORS Errors
