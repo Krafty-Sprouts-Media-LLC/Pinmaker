@@ -175,13 +175,14 @@ dist/
 
 ## 📝 Change Log
 
-### 2024-12-19
-- **Issue**: "vite: not found" build failure (persisted after initial fix)
-- **Fix #1**: Updated `netlify.toml` to include `npm ci` in build command
-- **Fix #2**: Updated `package.json` scripts to use `npx vite` instead of `vite`
+### 2024-12-19 - "vite: not found" Issue Resolution (Final Fix)
+- **Issue**: Build failing with "Cannot find package 'vite' imported" error
+- **Root Cause**: Version mismatch (npx installing vite@6.3.5 vs package.json vite@5.4.0) and vite in devDependencies
+- **Solution Applied**: Moved vite to dependencies to ensure availability during build, removed duplicate config file
 - **Files Modified**: 
-  - `frontend/netlify.toml` (build command)
-  - `frontend/package.json` (scripts with npx)
+  - `frontend/netlify.toml`: Updated build command to `npm ci && npm run build`
+  - `frontend/package.json`: Added `npx` prefix to vite commands in scripts, moved `vite` and `@vitejs/plugin-react` to dependencies
+  - `frontend/vite.config.js`: Removed duplicate config file (keeping vite.config.ts)
   - `NETLIFY_DEPLOYMENT.md` (added troubleshooting section)
   - `NETLIFY_TROUBLESHOOTING.md` (comprehensive guide)
 - **Status**: ✅ Ready for re-deployment (tested locally)
