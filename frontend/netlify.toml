@@ -6,6 +6,14 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
 
+# Proxy API requests to backend server
+[[redirects]]
+  from = "/api/*"
+  to = "https://pinmaker.kraftysprouts.com:8000/api/:splat"
+  status = 200
+  force = true
+
+# Handle frontend routing (SPA)
 [[redirects]]
   from = "/*"
   to = "/index.html"
