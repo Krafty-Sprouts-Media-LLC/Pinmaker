@@ -9,7 +9,7 @@
 # Proxy API requests to backend server
 [[redirects]]
   from = "/api/*"
-  to = "http://pinmaker.kraftysprouts.com:8000/api/:splat"
+  to = "https://pinmaker.kraftysprouts.com/api/:splat"
   status = 200
   force = true
 
