@@ -180,7 +180,8 @@ app.add_middleware(
         "pinmaker.kraftysprouts.com", 
         "localhost",
         "*.netlify.app",
-        "pinmaker-frontend.netlify.app"
+        "pinmaker-frontend.netlify.app",
+        "pinmaker.netlify.app"
     ]
 )
 
