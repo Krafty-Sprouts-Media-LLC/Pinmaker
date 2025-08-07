@@ -69,13 +69,13 @@ Create `.env` files for different environments:
 ### Development (.env)
 ```
 REACT_APP_API_URL=http://localhost:8000
-REACT_APP_API_PREFIX=/api
+REACT_APP_API_PREFIX=/api/v1
 ```
 
 ### Production (.env.production)
 ```
 REACT_APP_API_URL=https://pinmaker.kraftysprouts.com
-REACT_APP_API_PREFIX=/api
+REACT_APP_API_PREFIX=/api/v1
 ```
 
 ## Deployment to Netlify
@@ -91,7 +91,7 @@ REACT_APP_API_PREFIX=/api
 4. Set publish directory: `build`
 5. Add environment variables in Netlify dashboard:
    - `REACT_APP_API_URL=https://pinmaker.kraftysprouts.com`
-   - `REACT_APP_API_PREFIX=/api`
+   - `REACT_APP_API_PREFIX=/api/v1`
 
 ### Option 3: Netlify CLI
 ```bash
@@ -104,10 +104,10 @@ netlify deploy --prod --dir=build
 
 The frontend connects to a FastAPI backend with the following endpoints:
 
-- `POST /api/analyze-image` - Image analysis
-- `POST /api/generate-template` - Template generation
-- `POST /api/generate-preview` - Preview generation
-- `POST /api/export` - Export functionality
+- `POST /api/v1/analyze` - Image analysis
+- `POST /api/v1/generate-template` - Template generation
+- `POST /api/v1/generate-preview` - Preview generation
+- `POST /api/v1/export` - Export functionality
 - `GET /uploads/{filename}` - Uploaded files
 - `GET /templates/{filename}` - Template files
 - `GET /previews/{filename}` - Preview images

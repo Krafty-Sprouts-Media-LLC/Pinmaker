@@ -1,9 +1,9 @@
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const API_PREFIX = process.env.REACT_APP_API_PREFIX || '/api';
+const API_PREFIX = process.env.REACT_APP_API_PREFIX || '/api/v1';
 
 export const API_ENDPOINTS = {
-  ANALYZE: `${API_BASE_URL}${API_PREFIX}/analyze-image`,
+  ANALYZE: `${API_BASE_URL}${API_PREFIX}/analyze`,
   GENERATE_TEMPLATE: `${API_BASE_URL}${API_PREFIX}/generate-template`,
   GENERATE_PREVIEW: `${API_BASE_URL}${API_PREFIX}/generate-preview`,
   EXPORT: `${API_BASE_URL}${API_PREFIX}/export`,
