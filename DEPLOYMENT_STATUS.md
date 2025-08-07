@@ -131,13 +131,34 @@ Pinmaker/
 └── NETLIFY_DEPLOYMENT.md  # ✅ New: Deployment guide
 ```
 
+## 🚨 Build Issue Resolution
+
+### Issue Encountered: "vite: not found" Build Failure
+**Date**: 2024-12-19  
+**Status**: ✅ **RESOLVED**
+
+**Problem**: Netlify build failed with exit code 127 - `sh: 1: vite: not found`
+
+**Root Cause**: Build command `npm run build` was executed without installing dependencies first
+
+**Solution Applied**:
+- Updated `frontend/netlify.toml` build command from `npm run build` to `npm ci && npm run build`
+- Created comprehensive troubleshooting documentation
+- Enhanced deployment guides with specific error solutions
+
+**Files Modified**:
+- `frontend/netlify.toml` - Fixed build command
+- `NETLIFY_DEPLOYMENT.md` - Added troubleshooting section
+- `NETLIFY_TROUBLESHOOTING.md` - New comprehensive guide
+
 ## 🎯 Next Steps
 
 ### Immediate (Today)
-1. **Deploy to Netlify** following the guide
-2. **Test functionality** end-to-end
-3. **Update DNS** if using custom domain
-4. **Monitor performance** and errors
+1. **Re-Deploy to Netlify** with fixed build command
+2. **Monitor build logs** for successful completion
+3. **Test functionality** end-to-end
+4. **Update DNS** if using custom domain
+5. **Monitor performance** and errors
 
 ### Future Considerations
 1. **Gradio Migration** - Now easier with decoupled frontend
