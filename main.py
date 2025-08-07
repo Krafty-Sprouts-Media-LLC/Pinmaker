@@ -176,7 +176,12 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
-    TrustedHostMiddleware, allowed_hosts=["pinmaker.kraftysprouts.com", "localhost"]
+    TrustedHostMiddleware, allowed_hosts=[
+        "pinmaker.kraftysprouts.com", 
+        "localhost",
+        "*.netlify.app",
+        "pinmaker-frontend.netlify.app"
+    ]
 )
 
 
