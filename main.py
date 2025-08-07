@@ -50,7 +50,7 @@ class Config:
     TEMPLATE_DIR = BASE_DIR / "templates"
     PREVIEW_DIR = BASE_DIR / "previews"
     FONT_DIR = BASE_DIR / "fonts"
-    FRONTEND_DIR = BASE_DIR / "frontend" / "dist"
+    # FRONTEND_DIR removed - frontend now served by Netlify
     LOG_DIR = BASE_DIR / "logs"
 
     # File limits
@@ -65,7 +65,12 @@ class Config:
 
     # API settings
     API_PREFIX = "/api/v1"
-    CORS_ORIGINS = ["https://pinmaker.kraftysprouts.com", "http://localhost:3000"]
+    CORS_ORIGINS = [
+        "https://pinmaker.kraftysprouts.com",
+        "http://localhost:3000",
+        "https://*.netlify.app",  # Allow Netlify preview deployments
+        "https://pinmaker-frontend.netlify.app",  # Your Netlify domain (update this)
+    ]
 
     # Stock photo API keys (from environment)
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
@@ -426,36 +431,16 @@ async def serve_font(filename: str):
     return FileResponse(file_path)
 
 
-# Serve React frontend
-if config.FRONTEND_DIR.exists():
-    app.mount(
-        "/assets", StaticFiles(directory=config.FRONTEND_DIR / "assets"), name="assets"
-    )
-
-    @app.get("/{full_path:path}")
-    async def serve_frontend(request: Request, full_path: str):
-        """Serve React frontend for all non-API routes."""
-        # Serve static files directly
-        if full_path.startswith(("assets/", "favicon", "manifest", "robots")):
-            file_path = config.FRONTEND_DIR / full_path
-            if file_path.exists():
-                return FileResponse(file_path)
-
-        # Serve index.html for all other routes (SPA routing)
-        index_path = config.FRONTEND_DIR / "index.html"
-        if index_path.exists():
-            return FileResponse(index_path, media_type="text/html")
-
-        raise HTTPException(status_code=404, detail="Frontend not found")
-
-else:
-    logger.warning(
-        "Frontend build directory not found. Run 'npm run build' in frontend directory."
-    )
-
-    @app.get("/")
-    async def root():
-        return {"message": "Pinterest Template Generator API", "docs": "/api/docs"}
+# API-only backend - frontend served by Netlify
+@app.get("/")
+async def root():
+    """API root endpoint."""
+    return {
+        "message": "Pinterest Template Generator API",
+        "version": "1.0.0",
+        "docs": "/api/docs",
+        "frontend": "https://pinmaker-frontend.netlify.app",  # Update with your Netlify URL
+    }
 
 
 if __name__ == "__main__":

@@ -9,9 +9,25 @@ import {
   FontUploadResult
 } from '../types';
 
+// Get API base URL from environment variables
+const getApiBaseUrl = () => {
+  // For Netlify deployment, use environment variable
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Fallback for development
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8000';
+  }
+  
+  // Production fallback
+  return 'https://pinmaker.kraftysprouts.com';
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000',
+  baseURL: getApiBaseUrl(),
   timeout: 300000, // 5 minutes for analysis operations
   headers: {
     'Content-Type': 'application/json',
