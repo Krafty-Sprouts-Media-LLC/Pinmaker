@@ -1,57 +1,26 @@
-# Netlify configuration for Pinterest Template Generator Frontend
-
 [build]
-  # Build command
-  command = "npm ci && npm run build"
-  
-  # Directory to publish
-  publish = "dist"
-  
-  # Base directory for build
-  base = "frontend"
+  publish = "build"
+  command = "npm run build"
 
 [build.environment]
-  # Node.js version
-  NODE_VERSION = "20"
-  
-  # Build environment
-  NODE_ENV = "production"
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
-# SPA routing - redirect all routes to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# API proxy for development (optional)
-[[redirects]]
-  from = "/api/*"
-  to = "https://pinmaker.kraftysprouts.com/api/:splat"
-  status = 200
-  force = true
+[build.processing]
+  skip_processing = false
 
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com; connect-src 'self' https://pinmaker.kraftysprouts.com;"
+[build.processing.css]
+  bundle = true
+  minify = true
 
-# Cache static assets
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+[build.processing.js]
+  bundle = true
+  minify = true
 
-# Cache HTML with shorter duration
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "public, max-age=3600"
-
-# Environment variables (these will be set in Netlify dashboard)
-# VITE_API_BASE_URL = "https://pinmaker.kraftysprouts.com"
-# VITE_APP_NAME = "Pinterest Template Generator"
+[build.processing.html]
+  pretty_urls = true

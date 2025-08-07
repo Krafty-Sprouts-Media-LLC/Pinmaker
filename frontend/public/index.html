@@ -1,174 +1,43 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Pinterest Template Generator - Create stunning Pinterest templates from any image using AI-powered analysis and customization tools." />
-    <meta name="keywords" content="Pinterest, templates, AI, image analysis, design, social media, graphics" />
-    <meta name="author" content="KraftySpouts" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://pinmaker.kraftysprouts.com/" />
-    <meta property="og:title" content="Pinterest Template Generator" />
-    <meta property="og:description" content="Create stunning Pinterest templates from any image using AI-powered analysis and customization tools." />
-    <meta property="og:image" content="/og-image.png" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://pinmaker.kraftysprouts.com/" />
-    <meta property="twitter:title" content="Pinterest Template Generator" />
-    <meta property="twitter:description" content="Create stunning Pinterest templates from any image using AI-powered analysis and customization tools." />
-    <meta property="twitter:image" content="/og-image.png" />
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    
-    <!-- Preconnect to external domains -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    
-    <!-- Theme color -->
-    <meta name="theme-color" content="#3b82f6" />
-    
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/manifest.json" />
-    
-    <!-- Prevent FOUC (Flash of Unstyled Content) -->
-    <style>
-      /* Critical CSS for initial load */
-      html {
-        font-family: 'Inter', system-ui, sans-serif;
-        line-height: 1.5;
-        -webkit-text-size-adjust: 100%;
-        -moz-tab-size: 4;
-        tab-size: 4;
-      }
-      
-      body {
-        margin: 0;
-        background-color: #f9fafb;
-        color: #111827;
-      }
-      
-      #root {
-        min-height: 100vh;
-      }
-      
-      /* Loading spinner */
-      .initial-loader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #f9fafb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-      }
-      
-      .spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #e5e7eb;
-        border-top: 3px solid #3b82f6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* Hide loader when app loads */
-      .app-loaded .initial-loader {
-        display: none;
-      }
-    </style>
-    
-    <title>Pinterest Template Generator</title>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
   </head>
   <body>
-    <!-- Initial loading screen -->
-    <div class="initial-loader">
-      <div class="spinner"></div>
-    </div>
-    
-    <!-- React app root -->
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    
-    <!-- Fallback for users with JavaScript disabled -->
-    <noscript>
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #f9fafb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Inter', system-ui, sans-serif;
-        text-align: center;
-        padding: 20px;
-        box-sizing: border-box;
-      ">
-        <div style="
-          max-width: 400px;
-          background: white;
-          padding: 40px;
-          border-radius: 12px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        ">
-          <h1 style="
-            color: #111827;
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0 0 16px 0;
-          ">
-            JavaScript Required
-          </h1>
-          <p style="
-            color: #6b7280;
-            font-size: 16px;
-            line-height: 1.5;
-            margin: 0;
-          ">
-            This application requires JavaScript to function properly. 
-            Please enable JavaScript in your browser settings and reload the page.
-          </p>
-        </div>
-      </div>
-    </noscript>
-    
-    <!-- Module script -->
-    <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Remove initial loader when app loads -->
-    <script>
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          document.body.classList.add('app-loaded');
-        }, 100);
-      });
-    </script>
-    
-    <!-- Analytics (placeholder for future implementation) -->
-    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script> -->
-    <!-- <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'GA_MEASUREMENT_ID');
-    </script> -->
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
   </body>
 </html>
