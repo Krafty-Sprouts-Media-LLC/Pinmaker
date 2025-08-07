@@ -49,28 +49,8 @@ jobs:
         pytest --tb=short -v
       continue-on-error: true  # Don't fail deployment if tests fail
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: frontend/package.json
-    
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install
-    
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-    
-    - name: Test frontend
-      run: |
-        cd frontend
-        npm run test -- --run
-      continue-on-error: true
+    # Frontend build removed - now handled by Netlify
+    # Frontend tests can be added to Netlify build process if needed
 
   deploy:
     needs: test
@@ -121,12 +101,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           
-          # Build frontend
-          echo "🎨 Building frontend..."
-          cd frontend
-          npm install
-          npm run build
-          cd ..
+          # Frontend build removed - now handled by Netlify
+          echo "🎨 Frontend deployment handled by Netlify"
           
           # Run deployment script
           echo "🚀 Running deployment script..."
