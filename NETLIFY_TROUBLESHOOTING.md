@@ -30,10 +30,21 @@
   publish = "frontend/dist"
 ```
 
+✅ **Additional Fix in `package.json`:**
+```json
+"scripts": {
+  "build": "npx vite build",  // Added npx prefix
+  "dev": "npx vite",
+  "start": "npx vite",
+  "preview": "npx vite preview"
+}
+```
+
 **Why This Works:**
 - `npm ci` installs dependencies from `package-lock.json` (faster, more reliable for CI/CD)
-- Ensures all build tools (including Vite) are available before build execution
+- `npx` ensures the vite binary is found in `node_modules/.bin` even if PATH is not properly configured
 - More deterministic than `npm install` in CI environments
+- Resolves binary resolution issues in CI/CD environments
 
 **Prevention:**
 - Always include dependency installation in CI/CD build commands
@@ -165,12 +176,15 @@ dist/
 ## 📝 Change Log
 
 ### 2024-12-19
-- **Issue**: "vite: not found" build failure
-- **Fix**: Updated `netlify.toml` to include `npm ci` in build command
+- **Issue**: "vite: not found" build failure (persisted after initial fix)
+- **Fix #1**: Updated `netlify.toml` to include `npm ci` in build command
+- **Fix #2**: Updated `package.json` scripts to use `npx vite` instead of `vite`
 - **Files Modified**: 
-  - `frontend/netlify.toml`
+  - `frontend/netlify.toml` (build command)
+  - `frontend/package.json` (scripts with npx)
   - `NETLIFY_DEPLOYMENT.md` (added troubleshooting section)
-- **Status**: ✅ Ready for re-deployment
+  - `NETLIFY_TROUBLESHOOTING.md` (comprehensive guide)
+- **Status**: ✅ Ready for re-deployment (tested locally)
 
 ---
 
