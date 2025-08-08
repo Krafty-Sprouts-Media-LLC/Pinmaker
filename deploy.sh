@@ -271,14 +271,7 @@ install_python_deps() {
         warn "requirements.txt not found"
     fi
     
-    # Install Black for code formatting
-    log "Installing Black code formatter..."
-    pip install black
-    
-    # Auto-format code with Black
-    log "Auto-formatting code with Black..."
-    black . || warn "Black formatting failed, continuing deployment"
-    
+
     # Verify critical libraries
     log "Verifying critical libraries..."
     python -c "import easyocr; print('✅ EasyOCR available')" || warn "⚠️ EasyOCR not available"
