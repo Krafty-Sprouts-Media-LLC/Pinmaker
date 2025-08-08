@@ -1,482 +1,667 @@
 import cv2
 import numpy as np
-import easyocr
-from colorthief import ColorThief
-from PIL import Image, ImageFont, ImageDraw
-import torch
-from ultralytics import YOLO
+from PIL import Image, ImageDraw, ImageFont
+import pytesseract
 from sklearn.cluster import KMeans
+import webcolors
+from typing import Dict, List, Tuple, Any, Optional
+import logging
 import os
-import tempfile
-from typing import Dict, List, Tuple, Any
-import json
-from pathlib import Path
+from collections import Counter
+import re
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class ImageAnalyzer:
+    """Comprehensive image analysis for Pinterest pin optimization."""
+    
     def __init__(self):
-        self.ocr_reader = easyocr.Reader(["en"])
-        # Initialize YOLO for object detection (helps with layout analysis)
-        try:
-            self.yolo_model = YOLO("yolov8n.pt")  # Lightweight model for speed
-        except:
-            self.yolo_model = None
-            print("Warning: YOLO model not available, using fallback detection")
+        """Initialize the ImageAnalyzer with default settings."""
+        self.tesseract_config = '--oem 3 --psm 6'
+        
+        # Font detection patterns
+        self.serif_patterns = [
+            r'times', r'georgia', r'garamond', r'baskerville', 
+            r'minion', r'caslon', r'palatino'
+        ]
+        
+        self.sans_serif_patterns = [
+            r'arial', r'helvetica', r'calibri', r'verdana', 
+            r'tahoma', r'trebuchet', r'futura', r'avenir'
+        ]
+        
+        self.script_patterns = [
+            r'script', r'brush', r'handwriting', r'cursive',
+            r'calligraphy', r'signature'
+        ]
+        
+        self.display_patterns = [
+            r'impact', r'bebas', r'oswald', r'montserrat',
+            r'roboto', r'open sans', r'lato'
+        ]
 
-    async def analyze_image(self, image_path: str) -> Dict[str, Any]:
-        """Comprehensive image analysis for template generation"""
+    def analyze_image(self, image_path: str) -> Dict[str, Any]:
+        """Perform comprehensive image analysis.
+        
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Dictionary containing all analysis results
+        """
         try:
             # Load image
             image = cv2.imread(image_path)
             if image is None:
-                raise ValueError("Could not load image")
-
-            # Get image dimensions
-            height, width = image.shape[:2]
-
-            # Perform all analysis tasks
-            colors = await self._extract_colors(image_path)
-            fonts = await self._detect_fonts(image)
-            text_elements = await self._extract_text(image)
-            layout_structure = await self._analyze_layout(image)
-            image_regions = await self._detect_image_regions(image)
-            background_info = await self._analyze_background(image)
-
-            return {
-                "dimensions": {"width": width, "height": height},
-                "colors": colors,
-                "fonts": fonts,
-                "text_elements": text_elements,
-                "layout_structure": layout_structure,
-                "image_regions": image_regions,
-                "background_info": background_info,
-                "analysis_complete": True,
-            }
-
-        except Exception as e:
-            raise Exception(f"Image analysis failed: {str(e)}")
-
-    async def _extract_colors(self, image_path: str) -> Dict[str, Any]:
-        """Extract dominant colors from the image"""
-        try:
-            # Use ColorThief for dominant colors
-            color_thief = ColorThief(image_path)
-            dominant_color = color_thief.get_color(quality=1)
-            palette = color_thief.get_palette(color_count=8, quality=1)
-
-            # Convert to hex
-            dominant_hex = "#{:02x}{:02x}{:02x}".format(*dominant_color)
-            palette_hex = ["#{:02x}{:02x}{:02x}".format(*color) for color in palette]
-
-            # Additional color analysis using OpenCV
-            image = cv2.imread(image_path)
+                raise ValueError(f"Could not load image from {image_path}")
+            
+            # Convert to RGB for PIL operations
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-            # Reshape for clustering
-            pixels = image_rgb.reshape(-1, 3)
-
-            # Use KMeans to find color clusters
-            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
-            kmeans.fit(pixels)
-
-            cluster_colors = kmeans.cluster_centers_.astype(int)
-            cluster_hex = [
-                "#{:02x}{:02x}{:02x}".format(*color) for color in cluster_colors
-            ]
-
-            return {
-                "dominant_color": dominant_hex,
-                "palette": palette_hex,
-                "cluster_colors": cluster_hex,
-                "color_analysis": "high_accuracy",
+            pil_image = Image.fromarray(image_rgb)
+            
+            # Perform all analyses
+            results = {
+                'image_info': self._get_image_info(pil_image),
+                'color_analysis': self._analyze_colors(image_rgb),
+                'text_analysis': self._analyze_text(pil_image),
+                'layout_analysis': self._analyze_layout(image),
+                'background_analysis': self._analyze_background(image),
+                'visual_elements': self._analyze_visual_elements(image),
+                'pinterest_optimization': self._get_pinterest_recommendations(image_rgb, pil_image)
             }
-
+            
+            logger.info(f"Successfully analyzed image: {image_path}")
+            return results
+            
         except Exception as e:
-            return {"error": f"Color extraction failed: {str(e)}"}
+            logger.error(f"Error analyzing image {image_path}: {str(e)}")
+            raise
 
-    async def _detect_fonts(self, image: np.ndarray) -> Dict[str, Any]:
-        """Detect and analyze fonts in the image"""
-        try:
-            # Convert to grayscale for text analysis
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-            # Use OCR to get text regions with confidence
-            ocr_results = self.ocr_reader.readtext(gray, detail=1)
-
-            font_info = []
-            for bbox, text, confidence in ocr_results:
-                if confidence > 0.5:  # Filter low confidence detections
-                    # Extract text region
-                    x1, y1 = int(min([point[0] for point in bbox])), int(
-                        min([point[1] for point in bbox])
-                    )
-                    x2, y2 = int(max([point[0] for point in bbox])), int(
-                        max([point[1] for point in bbox])
-                    )
-
-                    # Calculate text properties
-                    text_height = y2 - y1
-                    text_width = x2 - x1
-
-                    # Estimate font size (rough approximation)
-                    estimated_font_size = max(12, int(text_height * 0.8))
-
-                    # Analyze text characteristics
-                    char_density = len(text) / max(text_width, 1)
-
-                    font_info.append(
-                        {
-                            "text": text,
-                            "bbox": [x1, y1, x2, y2],
-                            "estimated_size": estimated_font_size,
-                            "confidence": confidence,
-                            "char_density": char_density,
-                            "text_type": self._classify_text_type(
-                                text, estimated_font_size
-                            ),
-                        }
-                    )
-
-            return {
-                "detected_fonts": font_info,
-                "font_analysis": "high_accuracy",
-                "total_text_regions": len(font_info),
-            }
-
-        except Exception as e:
-            return {"error": f"Font detection failed: {str(e)}"}
-
-    def _classify_text_type(self, text: str, font_size: int) -> str:
-        """Classify text as title, subtitle, body, etc."""
-        text_length = len(text.strip())
-
-        if font_size > 24 and text_length < 50:
-            return "title"
-        elif font_size > 18 and text_length < 100:
-            return "subtitle"
-        elif text_length < 20:
-            return "label"
+    def _get_image_info(self, image: Image.Image) -> Dict[str, Any]:
+        """Get basic image information."""
+        width, height = image.size
+        aspect_ratio = width / height
+        
+        # Determine orientation
+        if aspect_ratio > 1.2:
+            orientation = "landscape"
+        elif aspect_ratio < 0.8:
+            orientation = "portrait"
         else:
-            return "body"
-
-    async def _extract_text(self, image: np.ndarray) -> List[Dict[str, Any]]:
-        """Extract all text elements with positioning"""
-        try:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            ocr_results = self.ocr_reader.readtext(gray, detail=1)
-
-            text_elements = []
-            for i, (bbox, text, confidence) in enumerate(ocr_results):
-                if confidence > 0.3:  # Lower threshold for text extraction
-                    x1, y1 = int(min([point[0] for point in bbox])), int(
-                        min([point[1] for point in bbox])
-                    )
-                    x2, y2 = int(max([point[0] for point in bbox])), int(
-                        max([point[1] for point in bbox])
-                    )
-
-                    text_elements.append(
-                        {
-                            "id": f"text_{i}",
-                            "content": text.strip(),
-                            "bbox": [x1, y1, x2, y2],
-                            "confidence": confidence,
-                            "suggested_placeholder": self._suggest_placeholder(
-                                text.strip()
-                            ),
-                        }
-                    )
-
-            return text_elements
-
-        except Exception as e:
-            return [{"error": f"Text extraction failed: {str(e)}"}]
-
-    def _suggest_placeholder(self, text: str) -> str:
-        """Suggest appropriate placeholder tag for detected text"""
-        text_lower = text.lower().strip()
-
-        # Common patterns for different placeholder types
-        if any(word in text_lower for word in ["title", "heading", "main"]):
-            return "{TITLE}"
-        elif any(word in text_lower for word in ["subtitle", "subheading"]):
-            return "{SUBTITLE}"
-        elif any(word in text_lower for word in ["description", "desc", "about"]):
-            return "{DESCRIPTION}"
-        elif any(word in text_lower for word in ["author", "by", "creator"]):
-            return "{AUTHOR}"
-        elif any(word in text_lower for word in ["date", "time", "when"]):
-            return "{DATE}"
-        elif any(word in text_lower for word in ["category", "tag", "type"]):
-            return "{CATEGORY}"
-        elif any(word in text_lower for word in ["quote", "saying"]):
-            return "{QUOTE}"
-        elif any(word in text_lower for word in ["price", "$", "cost"]):
-            return "{PRICE}"
-        elif any(word in text_lower for word in ["website", "site", "url"]):
-            return "{SITE_NAME}"
-        elif len(text) > 50:
-            return "{DESCRIPTION}"
-        elif len(text) < 10:
-            return "{TAG}"
-        else:
-            return "{TITLE}"
-
-    async def _analyze_layout(self, image: np.ndarray) -> Dict[str, Any]:
-        """Analyze layout structure using computer vision"""
-        try:
-            height, width = image.shape[:2]
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-            # Edge detection for layout analysis
-            edges = cv2.Canny(gray, 50, 150)
-
-            # Find contours for layout regions
-            contours, _ = cv2.findContours(
-                edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-
-            # Filter and analyze significant contours
-            layout_regions = []
-            for i, contour in enumerate(contours):
-                area = cv2.contourArea(contour)
-                if area > (width * height * 0.01):  # Filter small regions
-                    x, y, w, h = cv2.boundingRect(contour)
-
-                    layout_regions.append(
-                        {
-                            "id": f"region_{i}",
-                            "bbox": [x, y, x + w, y + h],
-                            "area": area,
-                            "aspect_ratio": w / h if h > 0 else 1,
-                        }
-                    )
-
-            # Analyze grid structure
-            grid_analysis = self._analyze_grid_structure(layout_regions, width, height)
-
-            return {
-                "layout_regions": layout_regions,
-                "grid_analysis": grid_analysis,
-                "layout_type": self._classify_layout_type(
-                    layout_regions, width, height
-                ),
-            }
-
-        except Exception as e:
-            return {"error": f"Layout analysis failed: {str(e)}"}
-
-    def _analyze_grid_structure(
-        self, regions: List[Dict], width: int, height: int
-    ) -> Dict[str, Any]:
-        """Analyze if layout follows a grid structure"""
-        if not regions:
-            return {"grid_detected": False}
-
-        # Extract x and y coordinates
-        x_coords = []
-        y_coords = []
-
-        for region in regions:
-            x1, y1, x2, y2 = region["bbox"]
-            x_coords.extend([x1, x2])
-            y_coords.extend([y1, y2])
-
-        # Find common alignment points
-        x_coords = sorted(set(x_coords))
-        y_coords = sorted(set(y_coords))
-
-        # Detect grid lines (simplified)
-        grid_cols = len(set([r["bbox"][0] for r in regions]))
-        grid_rows = len(set([r["bbox"][1] for r in regions]))
-
+            orientation = "square"
+        
+        # Check Pinterest optimal ratios
+        pinterest_ratios = {
+            "2:3": abs(aspect_ratio - (2/3)) < 0.1,
+            "1:1.5": abs(aspect_ratio - (1/1.5)) < 0.1,
+            "9:16": abs(aspect_ratio - (9/16)) < 0.1
+        }
+        
+        optimal_ratio = any(pinterest_ratios.values())
+        
         return {
-            "grid_detected": grid_cols > 1 or grid_rows > 1,
-            "estimated_columns": grid_cols,
-            "estimated_rows": grid_rows,
-            "alignment_points": {
-                "x": x_coords[:5],
-                "y": y_coords[:5],
-            },  # Limit for response size
+            "width": width,
+            "height": height,
+            "aspect_ratio": round(aspect_ratio, 2),
+            "orientation": orientation,
+            "pinterest_optimal": optimal_ratio,
+            "pinterest_ratios": pinterest_ratios,
+            "total_pixels": width * height
         }
 
-    def _classify_layout_type(
-        self, regions: List[Dict], width: int, height: int
-    ) -> str:
-        """Classify the overall layout type"""
-        if not regions:
-            return "simple"
-
-        num_regions = len(regions)
-
-        if num_regions == 1:
-            return "single_focus"
-        elif num_regions <= 3:
-            return "minimal"
-        elif num_regions <= 6:
-            return "moderate"
-        else:
-            return "complex"
-
-    async def _detect_image_regions(self, image: np.ndarray) -> List[Dict[str, Any]]:
-        """Detect and classify image regions"""
-        try:
-            height, width = image.shape[:2]
-
-            # Use YOLO if available for object detection
-            image_regions = []
-
-            if self.yolo_model:
+    def _analyze_colors(self, image: np.ndarray) -> Dict[str, Any]:
+        """Analyze color composition and palette."""
+        # Reshape image for clustering
+        pixels = image.reshape(-1, 3)
+        
+        # Remove very dark and very light pixels for better color analysis
+        mask = np.logical_and(
+            np.mean(pixels, axis=1) > 20,
+            np.mean(pixels, axis=1) < 235
+        )
+        filtered_pixels = pixels[mask]
+        
+        if len(filtered_pixels) == 0:
+            filtered_pixels = pixels
+        
+        # Perform K-means clustering to find dominant colors
+        n_colors = min(8, len(filtered_pixels))
+        if n_colors > 1:
+            kmeans = KMeans(n_clusters=n_colors, random_state=42, n_init=10)
+            kmeans.fit(filtered_pixels)
+            
+            # Get colors and their frequencies
+            colors = kmeans.cluster_centers_.astype(int)
+            labels = kmeans.labels_
+            color_counts = Counter(labels)
+            
+            # Sort colors by frequency
+            dominant_colors = []
+            for i, count in color_counts.most_common():
+                color_rgb = tuple(colors[i])
+                percentage = (count / len(labels)) * 100
+                
+                # Convert to hex
+                color_hex = '#{:02x}{:02x}{:02x}'.format(*color_rgb)
+                
+                # Try to get color name
                 try:
-                    results = self.yolo_model(image)
-                    for i, result in enumerate(results[0].boxes.data):
-                        x1, y1, x2, y2, conf, cls = result
-                        if conf > 0.3:  # Confidence threshold
-                            image_regions.append(
-                                {
-                                    "id": f"image_{i + 1}",
-                                    "bbox": [int(x1), int(y1), int(x2), int(y2)],
-                                    "confidence": float(conf),
-                                    "type": self._classify_image_type(
-                                        image, [int(x1), int(y1), int(x2), int(y2)]
-                                    ),
-                                    "placeholder_tag": f"{{IMAGE_{i + 1}}}",
-                                }
-                            )
-                except Exception as e:
-                    print(f"YOLO detection failed: {e}")
+                    color_name = webcolors.rgb_to_name(color_rgb)
+                except ValueError:
+                    color_name = self._get_closest_color_name(color_rgb)
+                
+                dominant_colors.append({
+                    "rgb": color_rgb,
+                    "hex": color_hex,
+                    "name": color_name,
+                    "percentage": round(percentage, 1)
+                })
+        else:
+            # Fallback for single color
+            avg_color = np.mean(filtered_pixels, axis=0).astype(int)
+            color_hex = '#{:02x}{:02x}{:02x}'.format(*avg_color)
+            dominant_colors = [{
+                "rgb": tuple(avg_color),
+                "hex": color_hex,
+                "name": self._get_closest_color_name(tuple(avg_color)),
+                "percentage": 100.0
+            }]
+        
+        # Analyze color temperature and mood
+        avg_color = np.mean(pixels, axis=0)
+        color_temp = self._analyze_color_temperature(avg_color)
+        color_mood = self._analyze_color_mood(dominant_colors)
+        
+        return {
+            "dominant_colors": dominant_colors,
+            "color_temperature": color_temp,
+            "color_mood": color_mood,
+            "average_brightness": float(np.mean(pixels)),
+            "color_diversity": len(dominant_colors)
+        }
 
-            # Fallback: Use color segmentation for image detection
-            if not image_regions:
-                image_regions = await self._detect_images_by_segmentation(image)
+    def _get_closest_color_name(self, rgb_color: Tuple[int, int, int]) -> str:
+        """Get the closest named color for an RGB value."""
+        min_colors = {}
+        for key, name in webcolors.CSS3_HEX_TO_NAMES.items():
+            r_c, g_c, b_c = webcolors.hex_to_rgb(key)
+            rd = (r_c - rgb_color[0]) ** 2
+            gd = (g_c - rgb_color[1]) ** 2
+            bd = (b_c - rgb_color[2]) ** 2
+            min_colors[(rd + gd + bd)] = name
+        return min_colors[min(min_colors.keys())]
 
-            return image_regions
+    def _analyze_color_temperature(self, avg_color: np.ndarray) -> str:
+        """Analyze if colors are warm, cool, or neutral."""
+        r, g, b = avg_color
+        
+        # Simple color temperature analysis
+        if r > g and r > b:
+            return "warm"
+        elif b > r and b > g:
+            return "cool"
+        else:
+            return "neutral"
 
-        except Exception as e:
-            return [{"error": f"Image region detection failed: {str(e)}"}]
+    def _analyze_color_mood(self, dominant_colors: List[Dict]) -> str:
+        """Analyze the overall mood based on colors."""
+        if not dominant_colors:
+            return "neutral"
+        
+        # Analyze based on dominant color
+        primary_color = dominant_colors[0]["rgb"]
+        r, g, b = primary_color
+        
+        # Simple mood analysis based on color psychology
+        if r > 150 and g < 100 and b < 100:
+            return "energetic"
+        elif g > 150 and r < 100 and b < 100:
+            return "natural"
+        elif b > 150 and r < 100 and g < 100:
+            return "calm"
+        elif r > 150 and g > 150 and b < 100:
+            return "cheerful"
+        elif r < 100 and g < 100 and b < 100:
+            return "sophisticated"
+        else:
+            return "balanced"
 
-    def _classify_image_type(self, image: np.ndarray, bbox: List[int]) -> str:
-        """Classify image region as placeholder_icon or real_photo"""
+    def _analyze_text(self, image: Image.Image) -> Dict[str, Any]:
+        """Analyze text content and typography."""
         try:
-            x1, y1, x2, y2 = bbox
-            roi = image[y1:y2, x1:x2]
-
-            if roi.size == 0:
-                return "unknown"
-
-            # Convert to RGB for analysis
-            roi_rgb = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
-
-            # Calculate color statistics
-            mean_color = np.mean(roi_rgb, axis=(0, 1))
-            std_color = np.std(roi_rgb, axis=(0, 1))
-
-            # Check if colors are in grayscale range (placeholder icons)
-            is_grayscale = np.allclose(mean_color, mean_color[0], atol=30)
-
-            # Check color variance (low variance = placeholder)
-            color_variance = np.mean(std_color)
-
-            # Check if colors are in typical placeholder range (120-180 RGB)
-            in_placeholder_range = all(120 <= c <= 180 for c in mean_color)
-
-            if is_grayscale and color_variance < 50 and in_placeholder_range:
-                return "placeholder_icon"
-            else:
-                return "real_photo"
-
-        except Exception:
-            return "unknown"
-
-    async def _detect_images_by_segmentation(
-        self, image: np.ndarray
-    ) -> List[Dict[str, Any]]:
-        """Fallback method to detect image regions using color segmentation"""
-        try:
-            height, width = image.shape[:2]
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-            # Apply threshold to find distinct regions
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-            # Find contours
-            contours, _ = cv2.findContours(
-                thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-
-            image_regions = []
-            for i, contour in enumerate(contours):
-                area = cv2.contourArea(contour)
-                if area > (width * height * 0.02):  # Filter small regions
-                    x, y, w, h = cv2.boundingRect(contour)
-
-                    # Check if region looks like an image placeholder
-                    aspect_ratio = w / h if h > 0 else 1
-                    if 0.5 <= aspect_ratio <= 2.0:  # Reasonable aspect ratio for images
-                        image_regions.append(
-                            {
-                                "id": f"image_{i + 1}",
-                                "bbox": [x, y, x + w, y + h],
-                                "confidence": 0.7,  # Default confidence for segmentation
-                                "type": self._classify_image_type(
-                                    image, [x, y, x + w, y + h]
-                                ),
-                                "placeholder_tag": f"{{IMAGE_{i + 1}}}",
+            # Extract text using OCR
+            text = pytesseract.image_to_string(image, config=self.tesseract_config)
+            
+            # Get detailed text information
+            text_data = pytesseract.image_to_data(image, config=self.tesseract_config, output_type=pytesseract.Output.DICT)
+            
+            # Filter out low confidence detections
+            confident_text = []
+            text_regions = []
+            
+            for i in range(len(text_data['text'])):
+                if int(text_data['conf'][i]) > 30:  # Confidence threshold
+                    word = text_data['text'][i].strip()
+                    if word:
+                        confident_text.append(word)
+                        text_regions.append({
+                            "text": word,
+                            "confidence": int(text_data['conf'][i]),
+                            "bbox": {
+                                "x": text_data['left'][i],
+                                "y": text_data['top'][i],
+                                "width": text_data['width'][i],
+                                "height": text_data['height'][i]
                             }
-                        )
-
-            return image_regions[:10]  # Limit to 10 image regions
-
-        except Exception as e:
-            return [{"error": f"Segmentation detection failed: {str(e)}"}]
-
-    async def _analyze_background(self, image: np.ndarray) -> Dict[str, Any]:
-        """Analyze background properties"""
-        try:
-            height, width = image.shape[:2]
-
-            # Sample background from corners and edges
-            corner_size = min(50, width // 10, height // 10)
-
-            corners = [
-                image[0:corner_size, 0:corner_size],  # Top-left
-                image[0:corner_size, -corner_size:],  # Top-right
-                image[-corner_size:, 0:corner_size],  # Bottom-left
-                image[-corner_size:, -corner_size:],  # Bottom-right
-            ]
-
-            # Calculate average background color
-            bg_colors = []
-            for corner in corners:
-                if corner.size > 0:
-                    mean_color = np.mean(corner, axis=(0, 1))
-                    bg_colors.append(mean_color)
-
-            if bg_colors:
-                avg_bg_color = np.mean(bg_colors, axis=0)
-                bg_hex = "#{:02x}{:02x}{:02x}".format(
-                    int(avg_bg_color[2]),
-                    int(avg_bg_color[1]),
-                    int(avg_bg_color[0]),  # BGR to RGB
-                )
-            else:
-                bg_hex = "#ffffff"
-
-            # Detect if background has patterns or gradients
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            bg_variance = np.var(gray)
-
-            bg_type = (
-                "solid"
-                if bg_variance < 1000
-                else "gradient" if bg_variance < 5000 else "pattern"
-            )
-
+                        })
+            
+            # Analyze text content
+            full_text = ' '.join(confident_text)
+            word_count = len(confident_text)
+            
+            # Detect potential fonts (basic heuristics)
+            font_analysis = self._analyze_fonts(text_regions, image)
+            
+            # Analyze text layout
+            text_layout = self._analyze_text_layout(text_regions, image.size)
+            
             return {
-                "background_color": bg_hex,
-                "background_type": bg_type,
-                "background_variance": float(bg_variance),
+                "extracted_text": full_text,
+                "word_count": word_count,
+                "text_regions": text_regions,
+                "font_analysis": font_analysis,
+                "text_layout": text_layout,
+                "has_text": len(confident_text) > 0
+            }
+            
+        except Exception as e:
+            logger.warning(f"Text analysis failed: {str(e)}")
+            return {
+                "extracted_text": "",
+                "word_count": 0,
+                "text_regions": [],
+                "font_analysis": {},
+                "text_layout": {},
+                "has_text": False
             }
 
-        except Exception as e:
-            return {"error": f"Background analysis failed: {str(e)}"}
+    def _analyze_fonts(self, text_regions: List[Dict], image: Image.Image) -> Dict[str, Any]:
+        """Analyze font characteristics from text regions."""
+        if not text_regions:
+            return {"detected_fonts": [], "font_categories": []}
+        
+        font_sizes = []
+        font_categories = []
+        
+        for region in text_regions:
+            # Estimate font size based on bounding box height
+            font_size = region["bbox"]["height"]
+            font_sizes.append(font_size)
+            
+            # Basic font category detection (would need more sophisticated analysis)
+            text_lower = region["text"].lower()
+            
+            # Check for font indicators in text (if any)
+            if any(re.search(pattern, text_lower) for pattern in self.serif_patterns):
+                font_categories.append("serif")
+            elif any(re.search(pattern, text_lower) for pattern in self.sans_serif_patterns):
+                font_categories.append("sans-serif")
+            elif any(re.search(pattern, text_lower) for pattern in self.script_patterns):
+                font_categories.append("script")
+            elif any(re.search(pattern, text_lower) for pattern in self.display_patterns):
+                font_categories.append("display")
+            else:
+                font_categories.append("unknown")
+        
+        avg_font_size = np.mean(font_sizes) if font_sizes else 0
+        font_category_counts = Counter(font_categories)
+        
+        return {
+            "average_font_size": round(avg_font_size, 1),
+            "font_size_range": [min(font_sizes), max(font_sizes)] if font_sizes else [0, 0],
+            "font_categories": dict(font_category_counts),
+            "primary_font_category": font_category_counts.most_common(1)[0][0] if font_category_counts else "unknown"
+        }
+
+    def _analyze_text_layout(self, text_regions: List[Dict], image_size: Tuple[int, int]) -> Dict[str, Any]:
+        """Analyze text layout and positioning."""
+        if not text_regions:
+            return {"text_coverage": 0, "text_distribution": "none"}
+        
+        width, height = image_size
+        
+        # Calculate text coverage
+        total_text_area = sum(
+            region["bbox"]["width"] * region["bbox"]["height"]
+            for region in text_regions
+        )
+        text_coverage = (total_text_area / (width * height)) * 100
+        
+        # Analyze text distribution
+        y_positions = [region["bbox"]["y"] for region in text_regions]
+        
+        top_third = height / 3
+        middle_third = 2 * height / 3
+        
+        top_count = sum(1 for y in y_positions if y < top_third)
+        middle_count = sum(1 for y in y_positions if top_third <= y < middle_third)
+        bottom_count = sum(1 for y in y_positions if y >= middle_third)
+        
+        if top_count > middle_count and top_count > bottom_count:
+            distribution = "top-heavy"
+        elif bottom_count > middle_count and bottom_count > top_count:
+            distribution = "bottom-heavy"
+        elif middle_count > top_count and middle_count > bottom_count:
+            distribution = "center-focused"
+        else:
+            distribution = "distributed"
+        
+        return {
+            "text_coverage": round(text_coverage, 2),
+            "text_distribution": distribution,
+            "text_regions_count": len(text_regions)
+        }
+
+    def _analyze_layout(self, image: np.ndarray) -> Dict[str, Any]:
+        """Analyze image layout and composition."""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        height, width = gray.shape
+        
+        # Detect edges for composition analysis
+        edges = cv2.Canny(gray, 50, 150)
+        
+        # Analyze rule of thirds
+        thirds_analysis = self._analyze_rule_of_thirds(edges)
+        
+        # Detect main subject/focal points
+        focal_points = self._detect_focal_points(gray)
+        
+        # Analyze symmetry
+        symmetry = self._analyze_symmetry(gray)
+        
+        # Analyze visual weight distribution
+        weight_distribution = self._analyze_visual_weight(gray)
+        
+        return {
+            "rule_of_thirds": thirds_analysis,
+            "focal_points": focal_points,
+            "symmetry": symmetry,
+            "visual_weight": weight_distribution,
+            "edge_density": float(np.sum(edges > 0) / (width * height))
+        }
+
+    def _analyze_rule_of_thirds(self, edges: np.ndarray) -> Dict[str, Any]:
+        """Analyze adherence to rule of thirds."""
+        height, width = edges.shape
+        
+        # Define thirds lines
+        v_line1 = width // 3
+        v_line2 = 2 * width // 3
+        h_line1 = height // 3
+        h_line2 = 2 * height // 3
+        
+        # Check edge density along thirds lines
+        v1_density = np.sum(edges[:, v_line1-2:v_line1+3]) / (height * 5)
+        v2_density = np.sum(edges[:, v_line2-2:v_line2+3]) / (height * 5)
+        h1_density = np.sum(edges[h_line1-2:h_line1+3, :]) / (width * 5)
+        h2_density = np.sum(edges[h_line2-2:h_line2+3, :]) / (width * 5)
+        
+        avg_density = (v1_density + v2_density + h1_density + h2_density) / 4
+        
+        # Check intersection points
+        intersections = [
+            (v_line1, h_line1), (v_line1, h_line2),
+            (v_line2, h_line1), (v_line2, h_line2)
+        ]
+        
+        intersection_scores = []
+        for x, y in intersections:
+            region = edges[max(0, y-10):min(height, y+11), max(0, x-10):min(width, x+11)]
+            score = np.sum(region) / (region.shape[0] * region.shape[1])
+            intersection_scores.append(float(score))
+        
+        return {
+            "line_alignment_score": float(avg_density),
+            "intersection_scores": intersection_scores,
+            "follows_rule": avg_density > 0.1 or max(intersection_scores) > 0.2
+        }
+
+    def _detect_focal_points(self, gray: np.ndarray) -> List[Dict[str, Any]]:
+        """Detect potential focal points in the image."""
+        # Use corner detection to find interesting points
+        corners = cv2.goodFeaturesToTrack(gray, maxCorners=10, qualityLevel=0.01, minDistance=30)
+        
+        focal_points = []
+        if corners is not None:
+            for corner in corners:
+                x, y = corner.ravel()
+                focal_points.append({
+                    "x": int(x),
+                    "y": int(y),
+                    "strength": float(gray[int(y), int(x)])
+                })
+        
+        return focal_points
+
+    def _analyze_symmetry(self, gray: np.ndarray) -> Dict[str, Any]:
+        """Analyze image symmetry."""
+        height, width = gray.shape
+        
+        # Vertical symmetry
+        left_half = gray[:, :width//2]
+        right_half = np.fliplr(gray[:, width//2:])
+        
+        # Resize to match if needed
+        min_width = min(left_half.shape[1], right_half.shape[1])
+        left_half = left_half[:, :min_width]
+        right_half = right_half[:, :min_width]
+        
+        vertical_symmetry = float(np.corrcoef(left_half.flatten(), right_half.flatten())[0, 1])
+        
+        # Horizontal symmetry
+        top_half = gray[:height//2, :]
+        bottom_half = np.flipud(gray[height//2:, :])
+        
+        min_height = min(top_half.shape[0], bottom_half.shape[0])
+        top_half = top_half[:min_height, :]
+        bottom_half = bottom_half[:min_height, :]
+        
+        horizontal_symmetry = float(np.corrcoef(top_half.flatten(), bottom_half.flatten())[0, 1])
+        
+        return {
+            "vertical_symmetry": vertical_symmetry if not np.isnan(vertical_symmetry) else 0.0,
+            "horizontal_symmetry": horizontal_symmetry if not np.isnan(horizontal_symmetry) else 0.0,
+            "is_symmetric": max(vertical_symmetry, horizontal_symmetry) > 0.7
+        }
+
+    def _analyze_visual_weight(self, gray: np.ndarray) -> Dict[str, Any]:
+        """Analyze visual weight distribution."""
+        height, width = gray.shape
+        
+        # Divide image into quadrants
+        mid_h, mid_w = height // 2, width // 2
+        
+        quadrants = {
+            "top_left": gray[:mid_h, :mid_w],
+            "top_right": gray[:mid_h, mid_w:],
+            "bottom_left": gray[mid_h:, :mid_w],
+            "bottom_right": gray[mid_h:, mid_w:]
+        }
+        
+        # Calculate visual weight (inverse of brightness - darker areas have more weight)
+        weights = {}
+        for name, quadrant in quadrants.items():
+            avg_brightness = np.mean(quadrant)
+            visual_weight = 255 - avg_brightness  # Invert so darker = heavier
+            weights[name] = float(visual_weight)
+        
+        # Find dominant quadrant
+        dominant_quadrant = max(weights, key=weights.get)
+        
+        return {
+            "quadrant_weights": weights,
+            "dominant_quadrant": dominant_quadrant,
+            "weight_balance": float(np.std(list(weights.values())))
+        }
+
+    def _analyze_background(self, image: np.ndarray) -> Dict[str, Any]:
+        """Analyze background characteristics."""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Sample edges for background analysis
+        height, width = gray.shape
+        edge_width = min(50, width // 10)
+        edge_height = min(50, height // 10)
+        
+        # Sample from edges
+        edges_sample = np.concatenate([
+            gray[:edge_height, :].flatten(),  # Top edge
+            gray[-edge_height:, :].flatten(),  # Bottom edge
+            gray[:, :edge_width].flatten(),  # Left edge
+            gray[:, -edge_width:].flatten()  # Right edge
+        ])
+        
+        # Background color (mode of edge samples)
+        bg_color = np.median(edges_sample)
+        bg_hex = '#{:02x}{:02x}{:02x}'.format(int(bg_color), int(bg_color), int(bg_color))
+        
+        # Background complexity
+        bg_variance = np.var(gray)
+        
+        bg_type = (
+            "solid"
+            if bg_variance < 1000
+            else "gradient" if bg_variance < 5000 else "pattern"
+        )
+        
+        return {
+            "background_color": bg_hex,
+            "background_type": bg_type,
+            "background_complexity": float(bg_variance),
+            "is_simple_background": bg_variance < 2000
+        }
+
+    def _analyze_visual_elements(self, image: np.ndarray) -> Dict[str, Any]:
+        """Analyze visual elements like shapes, objects, etc."""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Detect contours for shape analysis
+        edges = cv2.Canny(gray, 50, 150)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Analyze shapes
+        shapes = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > 100:  # Filter small contours
+                # Approximate contour to polygon
+                epsilon = 0.02 * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, epsilon, True)
+                
+                # Classify shape based on number of vertices
+                vertices = len(approx)
+                if vertices == 3:
+                    shape_type = "triangle"
+                elif vertices == 4:
+                    shape_type = "rectangle"
+                elif vertices > 8:
+                    shape_type = "circle"
+                else:
+                    shape_type = "polygon"
+                
+                shapes.append({
+                    "type": shape_type,
+                    "area": float(area),
+                    "vertices": vertices
+                })
+        
+        # Count shape types
+        shape_counts = Counter(shape["type"] for shape in shapes)
+        
+        return {
+            "total_shapes": len(shapes),
+            "shape_distribution": dict(shape_counts),
+            "largest_shape": max(shapes, key=lambda x: x["area"]) if shapes else None,
+            "visual_complexity": len(contours)
+        }
+
+    def _get_pinterest_recommendations(self, image_rgb: np.ndarray, pil_image: Image.Image) -> Dict[str, Any]:
+        """Generate Pinterest-specific optimization recommendations."""
+        width, height = pil_image.size
+        aspect_ratio = width / height
+        
+        recommendations = []
+        score = 100  # Start with perfect score
+        
+        # Aspect ratio recommendations
+        if not (0.5 <= aspect_ratio <= 0.8):  # Pinterest prefers vertical
+            recommendations.append("Consider using a vertical aspect ratio (2:3 or 1:1.5) for better Pinterest performance")
+            score -= 15
+        
+        # Size recommendations
+        if width < 600:
+            recommendations.append("Increase image width to at least 600px for better quality")
+            score -= 10
+        
+        if height < 900:
+            recommendations.append("Increase image height to at least 900px for vertical pins")
+            score -= 10
+        
+        # Text analysis for Pinterest
+        avg_brightness = np.mean(image_rgb)
+        if avg_brightness < 50:
+            recommendations.append("Image appears too dark - consider brightening for better visibility")
+            score -= 10
+        elif avg_brightness > 200:
+            recommendations.append("Image appears too bright - consider adjusting contrast")
+            score -= 5
+        
+        # Color recommendations
+        unique_colors = len(np.unique(image_rgb.reshape(-1, 3), axis=0))
+        if unique_colors < 100:
+            recommendations.append("Consider adding more color variety to make the pin more engaging")
+            score -= 5
+        
+        # Final score calculation
+        pinterest_score = max(0, min(100, score))
+        
+        return {
+            "pinterest_score": pinterest_score,
+            "recommendations": recommendations,
+            "optimal_for_pinterest": pinterest_score >= 80,
+            "suggested_improvements": {
+                "aspect_ratio": "2:3 or 1:1.5",
+                "minimum_size": "600x900px",
+                "recommended_size": "1000x1500px"
+            }
+        }
+
+    def get_analysis_summary(self, analysis_results: Dict[str, Any]) -> str:
+        """Generate a human-readable summary of the analysis."""
+        summary_parts = []
+        
+        # Image info
+        info = analysis_results.get('image_info', {})
+        summary_parts.append(f"Image: {info.get('width', 'Unknown')}x{info.get('height', 'Unknown')} ({info.get('orientation', 'unknown')} orientation)")
+        
+        # Colors
+        colors = analysis_results.get('color_analysis', {})
+        if colors.get('dominant_colors'):
+            primary_color = colors['dominant_colors'][0]
+            summary_parts.append(f"Primary color: {primary_color.get('name', 'Unknown')} ({primary_color.get('percentage', 0):.1f}%)")
+        
+        # Text
+        text = analysis_results.get('text_analysis', {})
+        if text.get('has_text'):
+            summary_parts.append(f"Contains text: {text.get('word_count', 0)} words detected")
+        else:
+            summary_parts.append("No readable text detected")
+        
+        # Pinterest optimization
+        pinterest = analysis_results.get('pinterest_optimization', {})
+        score = pinterest.get('pinterest_score', 0)
+        summary_parts.append(f"Pinterest optimization score: {score}/100")
+        
+        return ". ".join(summary_parts) + "."
