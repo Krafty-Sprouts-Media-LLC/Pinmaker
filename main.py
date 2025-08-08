@@ -69,7 +69,9 @@ class Config:
         "https://pinmaker.kraftysprouts.com",
         "http://localhost:3000",
         "https://*.netlify.app",  # Allow Netlify preview deployments
-        "https://pinmaker-frontend.netlify.app",  # Your Netlify domain (update this)
+        "https://pinmaker-frontend.netlify.app",  # Your Netlify domain
+        "https://pinmaker.netlify.app",  # Alternative Netlify domain
+        "https://krafty-sprouts-media-llc.netlify.app",  # Organization domain
     ]
 
     # Stock photo API keys (from environment)
@@ -183,6 +185,7 @@ app.add_middleware(
         "*.netlify.app",
         "pinmaker-frontend.netlify.app",
         "pinmaker.netlify.app",
+        "krafty-sprouts-media-llc.netlify.app",
     ],
 )
 
