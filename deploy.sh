@@ -389,6 +389,28 @@ update_config() {
             log "Configuration is up to date"
         fi
     fi
+    
+    # Update Nginx configuration
+    if [ -f "nginx.conf" ]; then
+        log "Updating Nginx configuration..."
+        
+        # Backup existing nginx config
+        if [ -f "/etc/nginx/sites-available/$DOMAIN" ]; then
+            sudo cp "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-available/$DOMAIN.backup.$(date +%Y%m%d_%H%M%S)"
+        fi
+        
+        # Copy new nginx config
+        sudo cp "nginx.conf" "/etc/nginx/sites-available/$DOMAIN"
+        
+        # Test nginx configuration
+        if sudo nginx -t; then
+            log "✅ Nginx configuration updated and validated"
+        else
+            error "❌ Nginx configuration test failed"
+        fi
+    else
+        warn "⚠️ nginx.conf not found, skipping nginx update"
+    fi
 }
 
 # Restart services
