@@ -31,6 +31,11 @@ user = "pinmaker"
 group = "pinmaker"
 tmp_upload_dir = None
 
+# Timeout settings for image processing
+timeout = 300  # 5 minutes for image analysis
+keepalive = 5
+graceful_timeout = 30
+
 # SSL (handled by nginx)
 keyfile = None
 certfile = None

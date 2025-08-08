@@ -269,18 +269,34 @@ async def analyze_image(file: UploadFile = File(...)):
             f.write(content)
 
         # Analyze image
-        logger.info(f"Analyzing image: {file_path}")
-        analysis_result = await asyncio.to_thread(
-            image_analyzer.analyze_image, str(file_path)
-        )
+        logger.info(f"Starting analysis for image: {file_path}")
+        try:
+            analysis_result = await asyncio.to_thread(
+                image_analyzer.analyze_image, str(file_path)
+            )
+            logger.info(f"Analysis completed successfully for: {analysis_id}")
+            
+            return AnalysisResponse(
+                success=True, analysis_id=analysis_id, **analysis_result
+            )
+        except Exception as analysis_error:
+            logger.error(f"Image analysis failed for {analysis_id}: {analysis_error}")
+            # Clean up the uploaded file if analysis fails
+            try:
+                if file_path.exists():
+                    file_path.unlink()
+            except:
+                pass
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Image analysis failed: {str(analysis_error)}"
+            )
 
-        return AnalysisResponse(
-            success=True, analysis_id=analysis_id, **analysis_result
-        )
-
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error analyzing image: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in analyze endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during image upload")
 
 
 @app.post(f"{config.API_PREFIX}/generate-template", response_model=TemplateResponse)

@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 export const API_CONFIG = {
   BASE_URL: API_BASE_URL,
   PREFIX: API_PREFIX,
-  TIMEOUT: 120000, // 2 minutes for AI processing
+  TIMEOUT: 300000, // 5 minutes for image analysis and AI processing
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
 };
 

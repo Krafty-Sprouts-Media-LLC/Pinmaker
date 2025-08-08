@@ -39,7 +39,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, onAnalysis
 
       onAnalysisComplete(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to upload and analyze image');
+      let errorMessage = 'Failed to upload and analyze image';
+      
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        errorMessage = 'Image analysis is taking longer than expected. Please try with a smaller image or try again later.';
+      } else if (err.response?.status === 504) {
+        errorMessage = 'Server timeout - the image analysis is taking too long. Please try with a smaller image.';
+      } else if (err.response?.status === 413) {
+        errorMessage = 'Image file is too large. Please use an image smaller than 10MB.';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error occurred. Please try again in a few moments.';
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
       console.error('Upload error:', err);
     } finally {
       setIsUploading(false);

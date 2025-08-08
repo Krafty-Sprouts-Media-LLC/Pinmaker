@@ -24,26 +24,24 @@ class ImageAnalyzer:
             self.yolo_model = None
             print("Warning: YOLO model not available, using fallback detection")
 
-    async def analyze_image(self, image_path: str) -> Dict[str, Any]:
+    def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """Comprehensive image analysis for template generation"""
         try:
             # Load image
-
             image = cv2.imread(image_path)
             if image is None:
                 raise ValueError("Could not load image")
+            
             # Get image dimensions
-
             height, width = image.shape[:2]
 
-            # Perform all analysis tasks
-
-            colors = await self._extract_colors(image_path)
-            fonts = await self._detect_fonts(image)
-            text_elements = await self._extract_text(image)
-            layout_structure = await self._analyze_layout(image)
-            image_regions = await self._detect_image_regions(image)
-            background_info = await self._analyze_background(image)
+            # Perform all analysis tasks (synchronously for thread execution)
+            colors = self._extract_colors(image_path)
+            fonts = self._detect_fonts(image)
+            text_elements = self._extract_text(image)
+            layout_structure = self._analyze_layout(image)
+            image_regions = self._detect_image_regions(image)
+            background_info = self._analyze_background(image)
 
             return {
                 "dimensions": {"width": width, "height": height},
@@ -58,7 +56,7 @@ class ImageAnalyzer:
         except Exception as e:
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    async def _extract_colors(self, image_path: str) -> Dict[str, Any]:
+    def _extract_colors(self, image_path: str) -> Dict[str, Any]:
         """Extract dominant colors from the image"""
         try:
             # Use ColorThief for dominant colors
@@ -100,7 +98,7 @@ class ImageAnalyzer:
         except Exception as e:
             return {"error": f"Color extraction failed: {str(e)}"}
 
-    async def _detect_fonts(self, image: np.ndarray) -> Dict[str, Any]:
+    def _detect_fonts(self, image: np.ndarray) -> Dict[str, Any]:
         """Detect and analyze fonts in the image"""
         try:
             # Convert to grayscale for text analysis
@@ -169,7 +167,7 @@ class ImageAnalyzer:
         else:
             return "body"
 
-    async def _extract_text(self, image: np.ndarray) -> List[Dict[str, Any]]:
+    def _extract_text(self, image: np.ndarray) -> List[Dict[str, Any]]:
         """Extract all text elements with positioning"""
         try:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -231,7 +229,7 @@ class ImageAnalyzer:
         else:
             return "{TITLE}"
 
-    async def _analyze_layout(self, image: np.ndarray) -> Dict[str, Any]:
+    def _analyze_layout(self, image: np.ndarray) -> Dict[str, Any]:
         """Analyze layout structure using computer vision"""
         try:
             height, width = image.shape[:2]
@@ -329,7 +327,7 @@ class ImageAnalyzer:
         else:
             return "complex"
 
-    async def _detect_image_regions(self, image: np.ndarray) -> List[Dict[str, Any]]:
+    def _detect_image_regions(self, image: np.ndarray) -> List[Dict[str, Any]]:
         """Detect and classify image regions"""
         try:
             height, width = image.shape[:2]
@@ -401,7 +399,7 @@ class ImageAnalyzer:
         except Exception:
             return "unknown"
 
-    async def _detect_images_by_segmentation(
+    def _detect_images_by_segmentation(
         self, image: np.ndarray
     ) -> List[Dict[str, Any]]:
         """Fallback method to detect image regions using color segmentation"""
@@ -444,7 +442,7 @@ class ImageAnalyzer:
         except Exception as e:
             return [{"error": f"Segmentation detection failed: {str(e)}"}]
 
-    async def _analyze_background(self, image: np.ndarray) -> Dict[str, Any]:
+    def _analyze_background(self, image: np.ndarray) -> Dict[str, Any]:
         """Analyze background properties"""
         try:
             height, width = image.shape[:2]
