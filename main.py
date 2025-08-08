@@ -231,7 +231,7 @@ class PreviewResponse(BaseModel):
 
 
 # API Routes
-@app.get("/api/health")
+@app.get(f"{config.API_PREFIX}/health")
 async def health_check():
     """Health check endpoint."""
     return {
