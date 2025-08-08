@@ -358,7 +358,7 @@ class ImageAnalyzer:
             # Fallback: Use color segmentation for image detection
 
             if not image_regions:
-                image_regions = await self._detect_images_by_segmentation(image)
+                image_regions = self._detect_images_by_segmentation(image)
             return image_regions
         except Exception as e:
             return [{"error": f"Image region detection failed: {str(e)}"}]
