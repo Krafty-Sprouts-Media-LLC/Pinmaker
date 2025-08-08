@@ -17,6 +17,7 @@ class ImageAnalyzer:
     def __init__(self):
         self.ocr_reader = easyocr.Reader(["en"])
         # Initialize YOLO for object detection (helps with layout analysis)
+
         try:
             self.yolo_model = YOLO("yolov8n.pt")  # Lightweight model for speed
         except:
@@ -27,14 +28,16 @@ class ImageAnalyzer:
         """Comprehensive image analysis for template generation"""
         try:
             # Load image
+
             image = cv2.imread(image_path)
             if image is None:
                 raise ValueError("Could not load image")
-
             # Get image dimensions
+
             height, width = image.shape[:2]
 
             # Perform all analysis tasks
+
             colors = await self._extract_colors(image_path)
             fonts = await self._detect_fonts(image)
             text_elements = await self._extract_text(image)
@@ -52,7 +55,6 @@ class ImageAnalyzer:
                 "background_info": background_info,
                 "analysis_complete": True,
             }
-
         except Exception as e:
             raise Exception(f"Image analysis failed: {str(e)}")
 
@@ -60,22 +62,27 @@ class ImageAnalyzer:
         """Extract dominant colors from the image"""
         try:
             # Use ColorThief for dominant colors
+
             color_thief = ColorThief(image_path)
             dominant_color = color_thief.get_color(quality=1)
             palette = color_thief.get_palette(color_count=8, quality=1)
 
             # Convert to hex
+
             dominant_hex = "#{:02x}{:02x}{:02x}".format(*dominant_color)
             palette_hex = ["#{:02x}{:02x}{:02x}".format(*color) for color in palette]
 
             # Additional color analysis using OpenCV
+
             image = cv2.imread(image_path)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # Reshape for clustering
+
             pixels = image_rgb.reshape(-1, 3)
 
             # Use KMeans to find color clusters
+
             kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
             kmeans.fit(pixels)
 
@@ -90,7 +97,6 @@ class ImageAnalyzer:
                 "cluster_colors": cluster_hex,
                 "color_analysis": "high_accuracy",
             }
-
         except Exception as e:
             return {"error": f"Color extraction failed: {str(e)}"}
 
@@ -98,15 +104,18 @@ class ImageAnalyzer:
         """Detect and analyze fonts in the image"""
         try:
             # Convert to grayscale for text analysis
+
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             # Use OCR to get text regions with confidence
+
             ocr_results = self.ocr_reader.readtext(gray, detail=1)
 
             font_info = []
             for bbox, text, confidence in ocr_results:
                 if confidence > 0.5:  # Filter low confidence detections
                     # Extract text region
+
                     x1, y1 = int(min([point[0] for point in bbox])), int(
                         min([point[1] for point in bbox])
                     )
@@ -115,13 +124,16 @@ class ImageAnalyzer:
                     )
 
                     # Calculate text properties
+
                     text_height = y2 - y1
                     text_width = x2 - x1
 
                     # Estimate font size (rough approximation)
+
                     estimated_font_size = max(12, int(text_height * 0.8))
 
                     # Analyze text characteristics
+
                     char_density = len(text) / max(text_width, 1)
 
                     font_info.append(
@@ -136,13 +148,11 @@ class ImageAnalyzer:
                             ),
                         }
                     )
-
             return {
                 "detected_fonts": font_info,
                 "font_analysis": "high_accuracy",
                 "total_text_regions": len(font_info),
             }
-
         except Exception as e:
             return {"error": f"Font detection failed: {str(e)}"}
 
@@ -186,9 +196,7 @@ class ImageAnalyzer:
                             ),
                         }
                     )
-
             return text_elements
-
         except Exception as e:
             return [{"error": f"Text extraction failed: {str(e)}"}]
 
@@ -197,6 +205,7 @@ class ImageAnalyzer:
         text_lower = text.lower().strip()
 
         # Common patterns for different placeholder types
+
         if any(word in text_lower for word in ["title", "heading", "main"]):
             return "{TITLE}"
         elif any(word in text_lower for word in ["subtitle", "subheading"]):
@@ -229,14 +238,17 @@ class ImageAnalyzer:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             # Edge detection for layout analysis
+
             edges = cv2.Canny(gray, 50, 150)
 
             # Find contours for layout regions
+
             contours, _ = cv2.findContours(
                 edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
 
             # Filter and analyze significant contours
+
             layout_regions = []
             for i, contour in enumerate(contours):
                 area = cv2.contourArea(contour)
@@ -251,8 +263,8 @@ class ImageAnalyzer:
                             "aspect_ratio": w / h if h > 0 else 1,
                         }
                     )
-
             # Analyze grid structure
+
             grid_analysis = self._analyze_grid_structure(layout_regions, width, height)
 
             return {
@@ -262,7 +274,6 @@ class ImageAnalyzer:
                     layout_regions, width, height
                 ),
             }
-
         except Exception as e:
             return {"error": f"Layout analysis failed: {str(e)}"}
 
@@ -272,8 +283,8 @@ class ImageAnalyzer:
         """Analyze if layout follows a grid structure"""
         if not regions:
             return {"grid_detected": False}
-
         # Extract x and y coordinates
+
         x_coords = []
         y_coords = []
 
@@ -281,12 +292,13 @@ class ImageAnalyzer:
             x1, y1, x2, y2 = region["bbox"]
             x_coords.extend([x1, x2])
             y_coords.extend([y1, y2])
-
         # Find common alignment points
+
         x_coords = sorted(set(x_coords))
         y_coords = sorted(set(y_coords))
 
         # Detect grid lines (simplified)
+
         grid_cols = len(set([r["bbox"][0] for r in regions]))
         grid_rows = len(set([r["bbox"][1] for r in regions]))
 
@@ -306,7 +318,6 @@ class ImageAnalyzer:
         """Classify the overall layout type"""
         if not regions:
             return "simple"
-
         num_regions = len(regions)
 
         if num_regions == 1:
@@ -324,6 +335,7 @@ class ImageAnalyzer:
             height, width = image.shape[:2]
 
             # Use YOLO if available for object detection
+
             image_regions = []
 
             if self.yolo_model:
@@ -345,13 +357,11 @@ class ImageAnalyzer:
                             )
                 except Exception as e:
                     print(f"YOLO detection failed: {e}")
-
             # Fallback: Use color segmentation for image detection
+
             if not image_regions:
                 image_regions = await self._detect_images_by_segmentation(image)
-
             return image_regions
-
         except Exception as e:
             return [{"error": f"Image region detection failed: {str(e)}"}]
 
@@ -363,28 +373,31 @@ class ImageAnalyzer:
 
             if roi.size == 0:
                 return "unknown"
-
             # Convert to RGB for analysis
+
             roi_rgb = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
 
             # Calculate color statistics
+
             mean_color = np.mean(roi_rgb, axis=(0, 1))
             std_color = np.std(roi_rgb, axis=(0, 1))
 
             # Check if colors are in grayscale range (placeholder icons)
+
             is_grayscale = np.allclose(mean_color, mean_color[0], atol=30)
 
             # Check color variance (low variance = placeholder)
+
             color_variance = np.mean(std_color)
 
             # Check if colors are in typical placeholder range (120-180 RGB)
+
             in_placeholder_range = all(120 <= c <= 180 for c in mean_color)
 
             if is_grayscale and color_variance < 50 and in_placeholder_range:
                 return "placeholder_icon"
             else:
                 return "real_photo"
-
         except Exception:
             return "unknown"
 
@@ -397,9 +410,11 @@ class ImageAnalyzer:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             # Apply threshold to find distinct regions
+
             _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             # Find contours
+
             contours, _ = cv2.findContours(
                 thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
@@ -411,6 +426,7 @@ class ImageAnalyzer:
                     x, y, w, h = cv2.boundingRect(contour)
 
                     # Check if region looks like an image placeholder
+
                     aspect_ratio = w / h if h > 0 else 1
                     if 0.5 <= aspect_ratio <= 2.0:  # Reasonable aspect ratio for images
                         image_regions.append(
@@ -424,9 +440,7 @@ class ImageAnalyzer:
                                 "placeholder_tag": f"{{IMAGE_{i + 1}}}",
                             }
                         )
-
             return image_regions[:10]  # Limit to 10 image regions
-
         except Exception as e:
             return [{"error": f"Segmentation detection failed: {str(e)}"}]
 
@@ -436,6 +450,7 @@ class ImageAnalyzer:
             height, width = image.shape[:2]
 
             # Sample background from corners and edges
+
             corner_size = min(50, width // 10, height // 10)
 
             corners = [
@@ -446,12 +461,12 @@ class ImageAnalyzer:
             ]
 
             # Calculate average background color
+
             bg_colors = []
             for corner in corners:
                 if corner.size > 0:
                     mean_color = np.mean(corner, axis=(0, 1))
                     bg_colors.append(mean_color)
-
             if bg_colors:
                 avg_bg_color = np.mean(bg_colors, axis=0)
                 bg_hex = "#{:02x}{:02x}{:02x}".format(
@@ -461,8 +476,8 @@ class ImageAnalyzer:
                 )
             else:
                 bg_hex = "#ffffff"
-
             # Detect if background has patterns or gradients
+
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             bg_variance = np.var(gray)
 
@@ -477,6 +492,5 @@ class ImageAnalyzer:
                 "background_type": bg_type,
                 "background_variance": float(bg_variance),
             }
-
         except Exception as e:
             return {"error": f"Background analysis failed: {str(e)}"}
