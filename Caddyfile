@@ -1,11 +1,13 @@
 # Caddy configuration for Pinmaker API
 # Backend API server configuration
 
+# Global email for Let's Encrypt
+{
+    email hello@kraftysprouts.com
+}
+
 pinapi.kraftysprouts.com {
-    # Enable automatic HTTPS
-    tls {
-        email hello@kraftysprouts.com
-    }
+    # Enable automatic HTTPS (email configured globally above)
     
     # Basic security headers (removed restrictive CSP to prevent 500/504 errors)
     header {
