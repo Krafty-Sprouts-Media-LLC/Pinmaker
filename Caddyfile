@@ -1,83 +1,13 @@
 # Caddy configuration for Pinmaker API
-# Backend API server configuration
+# Automatic HTTPS with Let's Encrypt
 
-# Global email for Let's Encrypt
-{
-    email hello@kraftysprouts.com
-}
-
-pinapi.kraftysprouts.com {
-    # Enable automatic HTTPS (email configured globally above)
-    
-    # Basic security headers (removed restrictive CSP to prevent 500/504 errors)
-    header {
-        X-Content-Type-Options "nosniff"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-    
-    # Enable gzip compression
-    encode gzip
-    
-    # API routes - proxy to FastAPI backend
-    reverse_proxy 127.0.0.1:8000 {
-        # Health check
-        health_uri /api/v1/health
-        health_interval 30s
-        health_timeout 10s
-        
-        # Headers for backend
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-        
-        # Timeouts for image processing
-        transport http {
-            dial_timeout 60s
-            response_header_timeout 300s
-        }
-    }
-    
-    # File upload size limit
-    request_body {
-        max_size 50MB
-    }
-    
-    # Logging
-    log {
-        output file /var/log/caddy/pinapi.log {
-            roll_size 100MB
-            roll_keep 5
-            roll_keep_for 720h
-        }
-        format json
-        level INFO
-    }
-    
-    # Error handling
-    handle_errors {
-        @404 expression {http.error.status_code} == 404
-        handle @404 {
-            respond "API endpoint not found. Frontend available at https://pinmaker.netlify.app" 404 {
-                content_type application/json
-            }
-        }
-        
-        @5xx expression {http.error.status_code} >= 500
-        handle @5xx {
-            respond "Internal server error. Please try again later." 500 {
-                content_type application/json
-            }
-        }
-    }
-}
-
-
-
-# Global options
+# Global options (must be first)
 {
     # Email for Let's Encrypt
-    email admin@kraftysprouts.com
+    email hello@kraftysprouts.com
+    
+    # Use Let's Encrypt production
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
     
     # Enable admin API
     admin localhost:2019
@@ -86,11 +16,44 @@ pinapi.kraftysprouts.com {
     log {
         level INFO
     }
+}
+
+# API subdomain - main endpoint
+api.pinmaker.kraftysprouts.com {
     
-    # Security
-    servers {
-        protocol {
-            experimental_http3
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Gzip compression
+    encode gzip
+    
+    # Upload endpoint with special handling
+    handle /api/v1/upload {
+        request_body {
+            max_size 50MB
+        }
+        reverse_proxy localhost:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
         }
     }
+    
+    # All other API routes
+    handle {
+        reverse_proxy localhost:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+    
+    # Logging - simplified to avoid permission issues
+    log
 }
+
+# Main domain configuration removed - using Netlify CNAME
+# Only API subdomain is handled by this server
