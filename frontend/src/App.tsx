@@ -5,10 +5,16 @@ import TemplateEditor from './components/TemplateEditor';
 import TemplateExporter from './components/TemplateExporter';
 
 interface AnalysisResult {
-  dominant_colors: string[];
+  colors: Array<{type: string; color: string; index?: number}>;
+  dominant_colors?: string[]; // Keep for backward compatibility
   style_suggestions: string[];
   text_suggestions: string[];
   mood: string;
+  fonts: any[];
+  text_elements: any[];
+  image_regions: any[];
+  layout_structure: any;
+  background_info: any;
 }
 
 function App() {

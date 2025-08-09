@@ -3,10 +3,16 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
 interface AnalysisResult {
-  dominant_colors: string[];
+  colors: Array<{type: string; color: string; index?: number}>;
+  dominant_colors?: string[]; // Keep for backward compatibility
   style_suggestions: string[];
   text_suggestions: string[];
   mood: string;
+  fonts: any[];
+  text_elements: any[];
+  image_regions: any[];
+  layout_structure: any;
+  background_info: any;
 }
 
 interface TemplateData {
@@ -27,9 +33,28 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   analysisResult,
   onTemplateGenerated
 }) => {
+  // Extract dominant colors from the API response structure
+  const getDominantColors = (analysisResult: AnalysisResult | null): string[] => {
+    if (!analysisResult) return [];
+    
+    // Try new API format first (colors array)
+    if (analysisResult.colors && Array.isArray(analysisResult.colors)) {
+      return analysisResult.colors
+        .filter((item: any) => item?.color && item?.type === 'dominant')
+        .map((item: any) => item.color);
+    }
+    
+    // Fallback to old format (dominant_colors array)
+    if (analysisResult.dominant_colors && Array.isArray(analysisResult.dominant_colors)) {
+      return analysisResult.dominant_colors;
+    }
+    
+    return [];
+  };
+
   const [selectedStyle, setSelectedStyle] = useState('modern');
   const [customText, setCustomText] = useState('');
-  const [selectedColors, setSelectedColors] = useState<string[]>(analysisResult.dominant_colors.slice(0, 2));
+  const [selectedColors, setSelectedColors] = useState<string[]>(getDominantColors(analysisResult).slice(0, 2));
   const [isGenerating, setIsGenerating] = useState(false);
   const [customColor, setCustomColor] = useState('#000000');
 
@@ -100,10 +125,10 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           <div className="analysis-info">
             <h3>AI Analysis</h3>
             <div className="analysis-details">
-              <p><strong>Mood:</strong> {analysisResult.mood}</p>
+              <p><strong>Mood:</strong> {analysisResult?.mood || 'Unknown'}</p>
               <p><strong>Dominant Colors:</strong></p>
               <div className="color-options">
-                {analysisResult.dominant_colors.map((color, index) => (
+                {getDominantColors(analysisResult).map((color, index) => (
                   <div
                     key={index}
                     className="color-swatch"
@@ -115,7 +140,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
               <div className="style-recommendations">
                 <p><strong>Style Recommendations:</strong></p>
                 <ul>
-                  {analysisResult.style_suggestions.map((suggestion, index) => (
+                  {(analysisResult?.style_suggestions || []).map((suggestion, index) => (
                     <li key={index}>{suggestion}</li>
                   ))}
                 </ul>
@@ -152,7 +177,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
             
             <div className="text-suggestions">
               <p>AI Suggestions:</p>
-              {analysisResult.text_suggestions.map((suggestion, index) => (
+              {(analysisResult?.text_suggestions || []).map((suggestion, index) => (
                 <button
                   key={index}
                   className="suggestion-btn"
@@ -168,7 +193,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <label>Color Scheme (Select up to 3)</label>
             <div className="color-options">
               {/* Dominant colors from analysis */}
-              {analysisResult.dominant_colors.map((color, index) => (
+              {(analysisResult?.dominant_colors || []).map((color, index) => (
                 <div
                   key={`dominant-${index}`}
                   className={`color-option ${selectedColors.includes(color) ? 'selected' : ''}`}
