@@ -250,32 +250,24 @@ class PreviewGenerator:
                 x = int(float(text_elem.attrib.get("x", 0)))
                 y = int(float(text_elem.attrib.get("y", 0)))
                 font_size = int(float(text_elem.attrib.get("font-size", 16)))
-                fill_color = text_elem.attrib.get("fill", "#000000")
-                font_weight = text_elem.attrib.get("font-weight", "normal")
+                fill_color = text_elem.attrib.get("fill", "black")
 
-                # Get placeholder text and replace with sample content
-                placeholder_text = text_elem.text or ""
-                sample_text = self.sample_content.get(
-                    placeholder_text, placeholder_text
-                )
+                # Get text content
+                text_content = text_elem.text or "Sample Text"
+
+                # Replace placeholders with sample content
+                for placeholder, sample in self.sample_content.items():
+                    if placeholder in text_content:
+                        text_content = text_content.replace(placeholder, sample)
 
                 # Load font
                 try:
-                    if font_weight == "bold":
-                        font = ImageFont.truetype("arialbd.ttf", font_size)
-                    else:
-                        font = ImageFont.truetype("arial.ttf", font_size)
+                    font = ImageFont.truetype("arial.ttf", font_size)
                 except:
                     font = ImageFont.load_default()
 
-                # Convert color
-                if fill_color.startswith("#"):
-                    color = fill_color
-                else:
-                    color = "#000000"
-
                 # Draw text
-                draw.text((x, y), sample_text, fill=color, font=font)
+                draw.text((x, y), text_content, fill=fill_color, font=font)
 
         except Exception as e:
             print(f"Error rendering text elements: {e}")
@@ -345,6 +337,50 @@ class PreviewGenerator:
         except Exception as e:
             print(f"Error getting stock image: {e}")
             return None
+
+    async def generate_preview(
+        self,
+        svg_content: str,
+        sample_text: dict = None,
+        stock_keywords: list = None,
+        style: str = "modern",
+        format: str = "jpeg",
+        quality: int = 85,
+    ) -> Dict[str, Any]:
+        """Generate preview image from SVG content with sample content"""
+        try:
+            import io
+            from PIL import Image
+            
+            # Parse SVG
+            root = ET.fromstring(svg_content)
+
+            # Get dimensions
+            width = int(root.attrib.get("width", 800))
+            height = int(root.attrib.get("height", 600))
+
+            # Create preview image
+            preview_image = await self._render_preview(root, width, height, {})
+
+            # Convert to bytes
+            img_buffer = io.BytesIO()
+            if format.lower() == "png":
+                preview_image.save(img_buffer, "PNG", quality=quality, optimize=True)
+            else:
+                preview_image.save(img_buffer, "JPEG", quality=quality, optimize=True)
+            
+            img_buffer.seek(0)
+            image_data = img_buffer.getvalue()
+
+            return {
+                "image_data": image_data,
+                "dimensions": {"width": width, "height": height},
+                "format": format,
+                "status": "success",
+            }
+
+        except Exception as e:
+            raise Exception(f"Preview generation failed: {str(e)}")
 
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename for safe file system usage"""
