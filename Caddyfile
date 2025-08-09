@@ -51,14 +51,8 @@ api.pinmaker.kraftysprouts.com {
         }
     }
     
-    # Logging
-    log {
-        output file /var/log/caddy/api.log {
-            roll_size 100mb
-            roll_keep 5
-            roll_keep_for 720h
-        }
-    }
+    # Logging - simplified to avoid permission issues
+    log
 }
 
 # Main domain configuration removed - using Netlify CNAME
