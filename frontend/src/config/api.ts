@@ -1,7 +1,7 @@
 // API Configuration
-// Direct connection to VPS API for production, localhost for development
+// Direct connection to VPS API subdomain for production, localhost for development
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? (process.env.REACT_APP_API_URL || 'https://pinmaker.kraftysprouts.com')
+  ? (process.env.REACT_APP_API_URL || 'https://api.pinmaker.kraftysprouts.com')
   : (process.env.REACT_APP_API_URL || 'http://localhost:8000');
 const API_PREFIX = process.env.REACT_APP_API_PREFIX || '/api/v1';
 

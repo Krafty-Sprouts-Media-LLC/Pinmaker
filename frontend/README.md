@@ -74,7 +74,7 @@ REACT_APP_API_PREFIX=/api/v1
 
 ### Production (.env.production)
 ```
-REACT_APP_API_URL=https://pinmaker.kraftysprouts.com
+REACT_APP_API_URL=https://api.pinmaker.kraftysprouts.com
 REACT_APP_API_PREFIX=/api/v1
 ```
 
@@ -90,7 +90,7 @@ REACT_APP_API_PREFIX=/api/v1
 3. Set build command: `npm run build`
 4. Set publish directory: `build`
 5. Add environment variables in Netlify dashboard:
-   - `REACT_APP_API_URL=https://pinmaker.kraftysprouts.com`
+   - `REACT_APP_API_URL=https://api.pinmaker.kraftysprouts.com`
    - `REACT_APP_API_PREFIX=/api/v1`
 
 ### Option 3: Netlify CLI
@@ -128,4 +128,4 @@ src/
 
 ## Backend Repository
 
-The backend is hosted separately at: `https://pinmaker.kraftysprouts.com`
+The backend is hosted separately at: `https://api.pinmaker.kraftysprouts.com`
