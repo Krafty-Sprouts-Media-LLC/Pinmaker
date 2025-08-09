@@ -33,7 +33,7 @@ info() {
 APP_USER="pinmaker"
 APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
-DOMAIN="pinmaker.kraftysprouts.com"
+DOMAIN="api.pinmaker.kraftysprouts.com"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"
 GIT_BRANCH="main"
 LOG_FILE="$APP_DIR/logs/deploy.log"
@@ -191,7 +191,7 @@ server {
 EOF
 
     # Enable maintenance mode
-    if sudo ln -sf /etc/nginx/sites-available/maintenance /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com 2>/dev/null; then
+    if sudo ln -sf /etc/nginx/sites-available/maintenance /etc/nginx/sites-enabled/$DOMAIN 2>/dev/null; then
         sudo nginx -s reload
         log "✅ Maintenance mode enabled"
     else
@@ -204,7 +204,7 @@ disable_maintenance() {
     log "Disabling maintenance mode..."
     
     # Restore original Nginx config
-    if sudo ln -sf /etc/nginx/sites-available/pinmaker.kraftysprouts.com /etc/nginx/sites-enabled/pinmaker.kraftysprouts.com 2>/dev/null; then
+    if sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN 2>/dev/null; then
         sudo nginx -s reload
         log "✅ Maintenance mode disabled"
     else
