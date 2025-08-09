@@ -72,6 +72,7 @@ class Config:
         "https://pinmaker-frontend.netlify.app",  # Your Netlify domain
         "https://pinmaker.netlify.app",  # Alternative Netlify domain
         "https://krafty-sprouts-media-llc.netlify.app",  # Organization domain
+        "*",  # Allow all origins temporarily for debugging
     ]
 
     # Stock photo API keys (from environment)
@@ -251,6 +252,21 @@ async def health_check():
     }
 
 
+@app.options(f"{config.API_PREFIX}/analyze")
+async def analyze_options():
+    """Handle CORS preflight requests for analyze endpoint."""
+    from fastapi.responses import Response
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        }
+    )
+
+
 @app.post(f"{config.API_PREFIX}/analyze", response_model=AnalysisResponse)
 async def analyze_image(file: UploadFile = File(...)):
     """Analyze uploaded image and extract design elements."""
@@ -308,8 +324,19 @@ async def analyze_image(file: UploadFile = File(...)):
             with open(analysis_file, "w") as f:
                 json.dump(analysis_result, f)
             
-            return AnalysisResponse(
-                success=True, analysis_id=analysis_id, **analysis_result
+            # Return response with explicit CORS headers
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                content={
+                    "success": True,
+                    "analysis_id": analysis_id,
+                    **analysis_result
+                },
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                }
             )
         except asyncio.TimeoutError:
             logger.error(f"Analysis timeout for {analysis_id}")
