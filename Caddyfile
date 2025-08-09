@@ -1,0 +1,104 @@
+# Caddy configuration for Pinmaker API
+# Automatic HTTPS with Let's Encrypt
+
+# API subdomain - main endpoint
+api.pinmaker.kraftysprouts.com {
+    
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Gzip compression
+    encode gzip
+    
+    # Upload endpoint with special handling
+    handle /api/v1/upload {
+        request_body {
+            max_size 50MB
+        }
+        reverse_proxy localhost:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    
+    # All other API routes
+    handle {
+        reverse_proxy localhost:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/api.log {
+            roll_size 100mb
+            roll_keep 5
+            roll_keep_for 720h
+        }
+    }
+}
+
+# Main domain - redirect to API or serve static content
+pinmaker.kraftysprouts.com {
+    # Security headers
+    header {
+        # Security headers
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Remove server info
+        -Server
+    }
+    
+    # Enable compression
+    encode gzip
+    
+    # Reverse proxy to FastAPI backend
+    reverse_proxy localhost:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/pinmaker.log {
+            roll_size 100MB
+            roll_keep 5
+            roll_keep_for 720h
+        }
+        format json
+        level INFO
+    }
+}
+
+# Global options
+{
+    # Email for Let's Encrypt
+    email admin@kraftysprouts.com
+    
+    # Use Let's Encrypt production
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    
+    # Enable admin API
+    admin localhost:2019
+    
+    # Log level
+    log {
+        level INFO
+    }
+}
