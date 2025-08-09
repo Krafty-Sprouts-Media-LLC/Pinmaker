@@ -297,7 +297,7 @@ async def analyze_image(file: UploadFile = File(...)):
             import asyncio
             analysis_result = await asyncio.wait_for(
                 asyncio.to_thread(image_analyzer.analyze_image, str(file_path)),
-                timeout=60.0  # 60 second timeout
+                timeout=30.0  # 30 second timeout (reduced from 60)
             )
             
             logger.info(f"Analysis completed successfully for: {analysis_id}")

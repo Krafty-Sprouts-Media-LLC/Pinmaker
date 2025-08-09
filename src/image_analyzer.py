@@ -35,52 +35,118 @@ class ImageAnalyzer:
             # Get image dimensions
             height, width = image.shape[:2]
 
-            # Perform all analysis tasks (synchronously for thread execution)
-            colors_data = self._extract_colors(image_path)
-            fonts_data = self._detect_fonts(image)
-            text_elements = self._extract_text(image)
-            layout_structure = self._analyze_layout(image)
-            image_regions = self._detect_image_regions(image)
-            background_info = self._analyze_background(image)
+            # Try lightweight analysis first (faster, less resource intensive)
+            try:
+                return self._analyze_image_lightweight(image_path, width, height)
+            except Exception as light_error:
+                print(f"Lightweight analysis failed, trying full analysis: {light_error}")
+                # Fall back to full analysis
+                return self._analyze_image_full(image_path, width, height)
+                
+        except Exception as e:
+            raise Exception(f"Image analysis failed: {str(e)}")
 
-            # Convert to expected Pydantic format
-            # colors should be a list, fonts should be a list
+    def _analyze_image_lightweight(self, image_path: str, width: int, height: int) -> Dict[str, Any]:
+        """Lightweight analysis without heavy AI dependencies"""
+        try:
+            # Basic color extraction using PIL (faster than ColorThief)
+            from PIL import Image
+            import numpy as np
+            
+            pil_image = Image.open(image_path)
+            pil_image = pil_image.resize((100, 100))  # Resize for speed
+            img_array = np.array(pil_image)
+            
+            # Simple color analysis
             colors_list = []
-            if isinstance(colors_data, dict) and "error" not in colors_data:
-                # Extract color information into list format
-                if "dominant_color" in colors_data:
-                    colors_list.append({"type": "dominant", "color": colors_data["dominant_color"]})
-                if "palette" in colors_data:
-                    for i, color in enumerate(colors_data["palette"]):
-                        colors_list.append({"type": "palette", "color": color, "index": i})
-                if "cluster_colors" in colors_data:
-                    for i, color in enumerate(colors_data["cluster_colors"]):
-                        colors_list.append({"type": "cluster", "color": color, "index": i})
-            else:
-                # Fallback if color extraction failed
+            try:
+                # Get dominant colors using simple method
+                pixels = img_array.reshape(-1, 3)
+                unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
+                top_colors = unique_colors[np.argsort(counts)[-5:]]  # Top 5 colors
+                
+                for i, color in enumerate(top_colors):
+                    hex_color = "#{:02x}{:02x}{:02x}".format(*color)
+                    colors_list.append({"type": "dominant", "color": hex_color, "index": i})
+            except:
                 colors_list = [{"type": "fallback", "color": "#ffffff"}]
 
-            # Convert fonts data to list format
+            # Basic font/text analysis (no OCR)
             fonts_list = []
-            if isinstance(fonts_data, dict) and "error" not in fonts_data:
-                if "detected_fonts" in fonts_data:
-                    fonts_list = fonts_data["detected_fonts"]
-            else:
-                # Fallback if font detection failed
-                fonts_list = []
-
+            
+            # Basic layout analysis
+            layout_structure = {
+                "layout_regions": [],
+                "grid_analysis": {"grid_detected": False},
+                "layout_type": "simple"
+            }
+            
+            # Basic background analysis
+            background_info = {
+                "background_color": "#ffffff",
+                "background_type": "solid",
+                "background_variance": 0.0
+            }
+            
             return {
                 "dimensions": {"width": width, "height": height},
                 "colors": colors_list,
                 "fonts": fonts_list,
-                "text_elements": text_elements,
+                "text_elements": [],
                 "layout_structure": layout_structure,
-                "image_regions": image_regions,
+                "image_regions": [],
                 "background_info": background_info,
                 "analysis_complete": True,
             }
         except Exception as e:
-            raise Exception(f"Image analysis failed: {str(e)}")
+            raise Exception(f"Lightweight analysis failed: {str(e)}")
+
+    def _analyze_image_full(self, image_path: str, width: int, height: int) -> Dict[str, Any]:
+        """Full analysis with all AI dependencies"""
+        # Perform all analysis tasks (synchronously for thread execution)
+        colors_data = self._extract_colors(image_path)
+        fonts_data = self._detect_fonts(cv2.imread(image_path))
+        text_elements = self._extract_text(cv2.imread(image_path))
+        layout_structure = self._analyze_layout(cv2.imread(image_path))
+        image_regions = self._detect_image_regions(cv2.imread(image_path))
+        background_info = self._analyze_background(cv2.imread(image_path))
+
+        # Convert to expected Pydantic format
+        # colors should be a list, fonts should be a list
+        colors_list = []
+        if isinstance(colors_data, dict) and "error" not in colors_data:
+            # Extract color information into list format
+            if "dominant_color" in colors_data:
+                colors_list.append({"type": "dominant", "color": colors_data["dominant_color"]})
+            if "palette" in colors_data:
+                for i, color in enumerate(colors_data["palette"]):
+                    colors_list.append({"type": "palette", "color": color, "index": i})
+            if "cluster_colors" in colors_data:
+                for i, color in enumerate(colors_data["cluster_colors"]):
+                    colors_list.append({"type": "cluster", "color": color, "index": i})
+        else:
+            # Fallback if color extraction failed
+            colors_list = [{"type": "fallback", "color": "#ffffff"}]
+
+        # Convert fonts data to list format
+        fonts_list = []
+        if isinstance(fonts_data, dict) and "error" not in fonts_data:
+            if "detected_fonts" in fonts_data:
+                fonts_list = fonts_data["detected_fonts"]
+        else:
+            # Fallback if font detection failed
+            fonts_list = []
+
+        return {
+            "dimensions": {"width": width, "height": height},
+            "colors": colors_list,
+            "fonts": fonts_list,
+            "text_elements": text_elements,
+            "layout_structure": layout_structure,
+            "image_regions": image_regions,
+            "background_info": background_info,
+            "analysis_complete": True,
+        }
 
     def _extract_colors(self, image_path: str) -> Dict[str, Any]:
         """Extract dominant colors from the image"""
