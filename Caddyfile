@@ -18,15 +18,6 @@ pinapi.kraftysprouts.com {
     # Enable gzip compression
     encode gzip
     
-    # Rate limiting
-    rate_limit {
-        zone dynamic {
-            key {remote_host}
-            events 100
-            window 1m
-        }
-    }
-    
     # API routes - proxy to FastAPI backend
     reverse_proxy 127.0.0.1:8000 {
         # Health check
