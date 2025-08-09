@@ -6,7 +6,7 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
 
-# API requests now go directly to api.pinmaker.kraftysprouts.com
+# API requests now go directly to pinapi.kraftysprouts.com
 # No proxy needed since we're using the API subdomain
 
 # Handle frontend routing (SPA)

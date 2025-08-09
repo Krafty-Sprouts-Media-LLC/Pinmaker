@@ -33,7 +33,7 @@ info() {
 APP_USER="pinmaker"
 APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
-DOMAIN="api.pinmaker.kraftysprouts.com"
+DOMAIN="pinapi.kraftysprouts.com"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"
 GIT_BRANCH="main"
 LOG_FILE="$APP_DIR/logs/deploy.log"
@@ -169,30 +169,26 @@ enable_maintenance() {
 </html>
 EOF
 
-    # Create temporary Nginx config for maintenance
-    sudo tee /etc/nginx/sites-available/maintenance > /dev/null << EOF
-server {
-    listen 80;
-    listen 443 ssl http2;
-    server_name $DOMAIN www.$DOMAIN;
+    # Create temporary Caddy config for maintenance
+    sudo tee /etc/caddy/Caddyfile.maintenance > /dev/null << EOF
+$DOMAIN {
+    root * /tmp
+    try_files {path} /maintenance.html
     
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-    
-    location / {
-        root /tmp;
-        try_files /maintenance.html =503;
+    handle /health {
+        respond "Service Unavailable" 503
     }
     
-    location /health {
-        return 503;
+    log {
+        output file /var/log/caddy/access.log
+        format json
     }
 }
 EOF
 
     # Enable maintenance mode
-    if sudo ln -sf /etc/nginx/sites-available/maintenance /etc/nginx/sites-enabled/$DOMAIN 2>/dev/null; then
-        sudo nginx -s reload
+    if sudo cp /etc/caddy/Caddyfile.maintenance /etc/caddy/Caddyfile 2>/dev/null; then
+        sudo systemctl reload caddy
         log "✅ Maintenance mode enabled"
     else
         warn "⚠️ Could not enable maintenance mode, continuing anyway"
@@ -203,16 +199,16 @@ EOF
 disable_maintenance() {
     log "Disabling maintenance mode..."
     
-    # Restore original Nginx config
-    if sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN 2>/dev/null; then
-        sudo nginx -s reload
+    # Restore original Caddy config
+    if sudo cp Caddyfile /etc/caddy/Caddyfile 2>/dev/null; then
+        sudo systemctl reload caddy
         log "✅ Maintenance mode disabled"
     else
         warn "⚠️ Could not disable maintenance mode properly"
     fi
     
     # Clean up maintenance files
-    sudo rm -f /tmp/maintenance.html /etc/nginx/sites-available/maintenance
+    sudo rm -f /tmp/maintenance.html /etc/caddy/Caddyfile.maintenance
 }
 
 # Fetch latest code
@@ -390,26 +386,28 @@ update_config() {
         fi
     fi
     
-    # Update Nginx configuration
-    if [ -f "nginx.conf" ]; then
-        log "Updating Nginx configuration..."
+    # Update Caddy configuration
+    if [ -f "Caddyfile" ]; then
+        log "Updating Caddy configuration..."
         
-        # Backup existing nginx config
-        if [ -f "/etc/nginx/sites-available/$DOMAIN" ]; then
-            sudo cp "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-available/$DOMAIN.backup.$(date +%Y%m%d_%H%M%S)"
+        # Backup existing caddy config
+        if [ -f "/etc/caddy/Caddyfile" ]; then
+            sudo cp "/etc/caddy/Caddyfile" "/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
         fi
         
-        # Copy new nginx config
-        sudo cp "nginx.conf" "/etc/nginx/sites-available/$DOMAIN"
+        # Copy new caddy config
+        sudo cp "Caddyfile" "/etc/caddy/Caddyfile"
+        sudo chown caddy:caddy /etc/caddy/Caddyfile
+        sudo chmod 644 /etc/caddy/Caddyfile
         
-        # Test nginx configuration
-        if sudo nginx -t; then
-            log "✅ Nginx configuration updated and validated"
+        # Test caddy configuration
+        if sudo caddy validate --config /etc/caddy/Caddyfile; then
+            log "✅ Caddy configuration updated and validated"
         else
-            error "❌ Nginx configuration test failed"
+            error "❌ Caddy configuration test failed"
         fi
     else
-        warn "⚠️ nginx.conf not found, skipping nginx update"
+        warn "⚠️ Caddyfile not found, skipping caddy update"
     fi
 }
 
@@ -434,14 +432,14 @@ restart_services() {
         error "❌ $APP_NAME service failed to start"
     fi
     
-    # Restart Nginx
-    log "Restarting Nginx..."
-    sudo systemctl restart nginx
+    # Restart Caddy
+    log "Restarting Caddy..."
+    sudo systemctl restart caddy
     
-    if sudo systemctl is-active --quiet nginx; then
-        log "✅ Nginx restarted successfully"
+    if sudo systemctl is-active --quiet caddy; then
+        log "✅ Caddy restarted successfully"
     else
-        error "❌ Nginx failed to start"
+        error "❌ Caddy failed to start"
     fi
 }
 
@@ -468,7 +466,7 @@ verify_deployment() {
     done
     
     # Test main page
-    if curl -f -s https://pinmaker.kraftysprouts.com >/dev/null 2>&1; then
+    if curl -f -s https://pinapi.kraftysprouts.com >/dev/null 2>&1; then
         log "✅ Main page accessible"
     else
         warn "⚠️ Main page not accessible via HTTPS"
@@ -538,7 +536,7 @@ case "${1:-deploy}" in
     "status")
         log "Checking application status..."
         sudo systemctl status "$APP_NAME" --no-pager
-        sudo systemctl status nginx --no-pager
+        sudo systemctl status caddy --no-pager
         ;;
     "logs")
         log "Showing recent logs..."

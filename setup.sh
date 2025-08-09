@@ -33,7 +33,7 @@ info() {
 APP_USER="pinmaker"
 APP_DIR="/opt/Pinmaker"
 APP_NAME="pinmaker"
-DOMAIN="pinmaker.kraftysprouts.com"
+DOMAIN="pinapi.kraftysprouts.com"
 GIT_REPO="https://github.com/Krafty-Sprouts-Media-LLC/Pinmaker.git"
 GIT_BRANCH="main"
 LOG_FILE="/var/log/pinmaker_setup.log"
@@ -61,22 +61,26 @@ apt install -y \
     python3-pip \
     python3-venv \
     python3-dev \
-    nginx \
     git \
     curl \
     wget \
     unzip \
     build-essential \
-    libssl-dev \
     libffi-dev \
     libjpeg-dev \
     libpng-dev \
     libfreetype6-dev \
     pkg-config \
-    certbot \
-    python3-certbot-nginx \
     nodejs \
     npm
+
+# Install Caddy
+log "Installing Caddy web server..."
+apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update
+apt install -y caddy
 
 # Create application user
 log "Creating application user..."
@@ -206,32 +210,24 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-# Set up Nginx configuration
-log "Setting up Nginx configuration..."
-cp "$APP_DIR/nginx.conf" "/etc/nginx/sites-available/$DOMAIN"
+# Set up Caddy configuration
+log "Setting up Caddy configuration..."
+cp "$APP_DIR/Caddyfile" "/etc/caddy/Caddyfile"
 
-# Enable the site
-if [ -f "/etc/nginx/sites-enabled/$DOMAIN" ]; then
-    rm "/etc/nginx/sites-enabled/$DOMAIN"
-fi
-ln -s "/etc/nginx/sites-available/$DOMAIN" "/etc/nginx/sites-enabled/$DOMAIN"
+# Set proper permissions for Caddy
+chown caddy:caddy /etc/caddy/Caddyfile
+chmod 644 /etc/caddy/Caddyfile
 
-# Remove default Nginx site
-if [ -f "/etc/nginx/sites-enabled/default" ]; then
-    rm "/etc/nginx/sites-enabled/default"
-fi
+# Create log directory
+mkdir -p /var/log/caddy
+chown caddy:caddy /var/log/caddy
 
-# Test Nginx configuration
-log "Testing Nginx configuration..."
-nginx -t
+# Test Caddy configuration
+log "Testing Caddy configuration..."
+caddy validate --config /etc/caddy/Caddyfile
 
-# Set up SSL certificate
-log "Setting up SSL certificate..."
-if ! certbot certificates | grep -q "$DOMAIN"; then
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@kraftysprouts.com
-else
-    log "SSL certificate already exists for $DOMAIN"
-fi
+# SSL certificates are handled automatically by Caddy
+log "Caddy will automatically handle SSL certificates via Let's Encrypt"
 
 # Set proper permissions
 log "Setting proper permissions..."
@@ -242,10 +238,10 @@ chmod +x "$APP_DIR/deploy.sh"
 log "Enabling and starting services..."
 systemctl daemon-reload
 systemctl enable "$APP_NAME"
-systemctl enable nginx
+systemctl enable caddy
 
 systemctl restart "$APP_NAME"
-systemctl restart nginx
+systemctl restart caddy
 
 # Verify services are running
 log "Verifying services..."
@@ -255,10 +251,10 @@ else
     error "❌ $APP_NAME service failed to start"
 fi
 
-if systemctl is-active --quiet nginx; then
-    log "✅ Nginx service is running"
+if systemctl is-active --quiet caddy; then
+    log "✅ Caddy service is running"
 else
-    error "❌ Nginx service failed to start"
+    error "❌ Caddy service failed to start"
 fi
 
 # Test application
@@ -276,7 +272,7 @@ info "✅ Application: $APP_NAME"
 info "✅ Domain: $DOMAIN"
 info "✅ Directory: $APP_DIR"
 info "✅ User: $APP_USER"
-info "✅ Services: $APP_NAME, nginx"
+info "✅ Services: $APP_NAME, caddy"
 info "✅ SSL: Configured with Let's Encrypt"
 
 log "\n=== NEXT STEPS ==="

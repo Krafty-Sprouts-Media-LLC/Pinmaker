@@ -66,11 +66,10 @@ class Config:
     # API settings
     API_PREFIX = "/api/v1"
     CORS_ORIGINS = [
-        "https://pinmaker.kraftysprouts.com",
+        "https://pinmaker.netlify.app",  # Main frontend domain
         "http://localhost:3000",
         "https://*.netlify.app",  # Allow Netlify preview deployments
         "https://pinmaker-frontend.netlify.app",  # Your Netlify domain
-        "https://pinmaker.netlify.app",  # Alternative Netlify domain
         "https://krafty-sprouts-media-llc.netlify.app",  # Organization domain
         "*",  # Allow all origins temporarily for debugging
     ]
@@ -182,8 +181,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # app.add_middleware(
 #     TrustedHostMiddleware,
 #     allowed_hosts=[
-#         "pinmaker.kraftysprouts.com",
-#         "api.pinmaker.kraftysprouts.com",  # New API subdomain
+#         "pinapi.kraftysprouts.com",  # API subdomain
 #         "localhost",
 #         "*.netlify.app",
 #         "pinmaker-frontend.netlify.app",
@@ -550,164 +548,10 @@ async def root():
     }
 
 
-@app.get(f"{config.API_PREFIX}/diagnose")
-async def diagnose_services():
-    """Diagnose service availability and dependencies."""
-    diagnostics = {
-        "server_status": "running",
-        "services": {},
-        "dependencies": {},
-        "errors": []
-    }
-    
-    # Check image analyzer
-    try:
-        if image_analyzer is None:
-            diagnostics["services"]["image_analyzer"] = "not_initialized"
-            diagnostics["errors"].append("Image analyzer not initialized")
-        else:
-            diagnostics["services"]["image_analyzer"] = "available"
-            
-            # Test basic dependencies
-            try:
-                import cv2
-                diagnostics["dependencies"]["opencv"] = "available"
-            except ImportError as e:
-                diagnostics["dependencies"]["opencv"] = f"missing: {e}"
-                diagnostics["errors"].append(f"OpenCV missing: {e}")
-            
-            try:
-                import numpy as np
-                diagnostics["dependencies"]["numpy"] = "available"
-            except ImportError as e:
-                diagnostics["dependencies"]["numpy"] = f"missing: {e}"
-                diagnostics["errors"].append(f"NumPy missing: {e}")
-            
-            try:
-                import easyocr
-                diagnostics["dependencies"]["easyocr"] = "available"
-            except ImportError as e:
-                diagnostics["dependencies"]["easyocr"] = f"missing: {e}"
-                diagnostics["errors"].append(f"EasyOCR missing: {e}")
-            
-            try:
-                from ultralytics import YOLO
-                diagnostics["dependencies"]["ultralytics"] = "available"
-            except ImportError as e:
-                diagnostics["dependencies"]["ultralytics"] = f"missing: {e}"
-                diagnostics["errors"].append(f"Ultralytics missing: {e}")
-            
-            try:
-                from colorthief import ColorThief
-                diagnostics["dependencies"]["colorthief"] = "available"
-            except ImportError as e:
-                diagnostics["dependencies"]["colorthief"] = f"missing: {e}"
-                diagnostics["errors"].append(f"ColorThief missing: {e}")
-                
-    except Exception as e:
-        diagnostics["services"]["image_analyzer"] = f"error: {e}"
-        diagnostics["errors"].append(f"Image analyzer error: {e}")
-    
-    # Check file permissions
-    try:
-        test_file = config.UPLOAD_DIR / "test_write.tmp"
-        test_file.write_text("test")
-        test_file.unlink()
-        diagnostics["permissions"]["upload_dir"] = "writable"
-    except Exception as e:
-        diagnostics["permissions"]["upload_dir"] = f"not_writable: {e}"
-        diagnostics["errors"].append(f"Upload directory not writable: {e}")
-    
-    # Check available memory
-    try:
-        import psutil
-        memory = psutil.virtual_memory()
-        diagnostics["system"]["memory_available"] = f"{memory.available / (1024**3):.1f}GB"
-        diagnostics["system"]["memory_percent"] = f"{memory.percent}%"
-    except ImportError:
-        diagnostics["system"]["memory"] = "psutil not available"
-    
-    return diagnostics
 
 
-@app.post(f"{config.API_PREFIX}/test-analyze")
-async def test_analyze_image(file: UploadFile = File(...)):
-    """Simple test endpoint using only basic image processing."""
-    try:
-        # Validate file
-        if file.content_type not in config.ALLOWED_IMAGE_TYPES:
-            raise HTTPException(status_code=400, detail="Invalid file type")
 
-        # Read file
-        content = await file.read()
-        if len(content) > config.MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File too large")
 
-        # Test basic image processing
-        try:
-            import cv2
-            import numpy as np
-            from PIL import Image
-            import io
-            
-            # Convert bytes to PIL Image
-            image = Image.open(io.BytesIO(content))
-            width, height = image.size
-            
-            # Convert to OpenCV format
-            opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            
-            # Basic analysis without heavy dependencies
-            analysis_result = {
-                "dimensions": {"width": width, "height": height},
-                "colors": {
-                    "dominant_color": "#ffffff",
-                    "palette": ["#ffffff", "#000000"],
-                    "cluster_colors": ["#ffffff", "#000000"],
-                    "color_analysis": "basic"
-                },
-                "fonts": {
-                    "detected_fonts": [],
-                    "font_analysis": "basic",
-                    "total_text_regions": 0
-                },
-                "text_elements": [],
-                "layout_structure": {
-                    "layout_regions": [],
-                    "grid_analysis": {"grid_detected": False},
-                    "layout_type": "simple"
-                },
-                "image_regions": [],
-                "background_info": {
-                    "background_color": "#ffffff",
-                    "background_type": "solid",
-                    "background_variance": 0.0
-                },
-                "analysis_complete": True
-            }
-            
-            return AnalysisResponse(
-                success=True, 
-                analysis_id="test_analysis",
-                **analysis_result
-            )
-            
-        except ImportError as e:
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Basic image processing failed - missing dependency: {e}"
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Basic image processing failed: {e}"
-            )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Test analyze error: {e}")
-        raise HTTPException(status_code=500, detail="Test analysis failed")
 
 
 if __name__ == "__main__":
