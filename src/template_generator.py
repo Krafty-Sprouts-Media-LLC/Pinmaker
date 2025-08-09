@@ -1,299 +1,337 @@
-import xml.etree.ElementTree as ET
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-import json
+import xml.etree.ElementTree as ET
 import os
-from typing import Dict, List, Any, Tuple
-from pathlib import Path
-import base64
+import tempfile
+from typing import Dict, List, Any, Optional
+import json
+import random
 from datetime import datetime
+from .font_manager import FontManager
+from .stock_photo_service import StockPhotoService
 
 
 class TemplateGenerator:
-    def __init__(self):
-        self.placeholder_tags = [
-            "{TITLE}",
-            "{SUBTITLE}",
-            "{DESCRIPTION}",
-            "{AUTHOR}",
-            "{DATE}",
-            "{CATEGORY}",
-            "{TAG}",
-            "{QUOTE}",
-            "{CTA_TEXT}",
-            "{PRICE}",
-            "{DOMAIN}",
-            "{SITE_NAME}",
-            "{BRAND_NAME}",
-            "{URL}",
-            "{LOGO}",
-            "{IMAGE_URL}",
-            "{IMAGE_1}",
-            "{IMAGE_2}",
-            "{IMAGE_3}",
-            "{IMAGE_4}",
-            "{IMAGE_5}",
-            "{IMAGE_6}",
-            "{IMAGE_7}",
-            "{IMAGE_8}",
-            "{IMAGE_9}",
-            "{IMAGE_10}",
-            "{AVATAR}",
-            "{THUMBNAIL}",
-            "{BACKGROUND_IMAGE}",
-            "{USERNAME}",
-            "{USER_HANDLE}",
-            "{FOLLOWERS}",
-            "{LIKES}",
-            "{SHARES}",
-            "{VIEWS}",
-            "{RATING}",
-            "{PERCENTAGE}",
-            "{NUMBER}",
-        ]
+    def __init__(self, font_manager=None, stock_photo_service=None):
+        self.font_manager = font_manager or FontManager()
+        self.stock_service = stock_photo_service or StockPhotoService()
+
+        # Template styles
+        self.template_styles = {
+            "modern": {
+                "background_color": "#FFFFFF",
+                "primary_color": "#2196F3",
+                "secondary_color": "#FFC107",
+                "text_color": "#333333",
+                "font_family": "Arial",
+                "border_radius": 8,
+                "padding": 20,
+            },
+            "minimal": {
+                "background_color": "#F8F9FA",
+                "primary_color": "#6C757D",
+                "secondary_color": "#E9ECEF",
+                "text_color": "#212529",
+                "font_family": "Helvetica",
+                "border_radius": 0,
+                "padding": 30,
+            },
+            "vibrant": {
+                "background_color": "#FF6B6B",
+                "primary_color": "#4ECDC4",
+                "secondary_color": "#45B7D1",
+                "text_color": "#FFFFFF",
+                "font_family": "Impact",
+                "border_radius": 15,
+                "padding": 15,
+            },
+        }
 
     async def create_template(
-        self, image_path: str, template_name: str, content_mapping: Dict[str, Any]
+        self, analysis: Dict[str, Any], style: str = "modern", dimensions: tuple = (800, 600)
     ) -> Dict[str, Any]:
-        """Create SVG template from analyzed image"""
+        """Create SVG template from image analysis"""
         try:
-            # Load and analyze the original image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError("Could not load image")
+            # Get style configuration
+            style_config = self.template_styles.get(style, self.template_styles["modern"])
 
-            height, width = image.shape[:2]
+            # Create content mapping from analysis
+            content_mapping = self._create_content_mapping(analysis)
 
-            # Create SVG template
+            # Generate SVG template
             svg_content = await self._create_svg_template(
-                width, height, content_mapping, image
+                content_mapping, style_config, dimensions
             )
 
-            # Save template file
-            template_filename = f"{self._sanitize_filename(template_name)}.svg"
+            # Generate unique template ID
+            template_id = f"template_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000, 9999)}"
+            template_filename = f"{template_id}.svg"
             template_path = f"templates/{template_filename}"
 
+            # Ensure templates directory exists
+            os.makedirs("templates", exist_ok=True)
+
+            # Save SVG template
             with open(template_path, "w", encoding="utf-8") as f:
                 f.write(svg_content)
-
-            # Create template metadata
-            template_data = {
-                "name": template_name,
-                "filename": template_filename,
-                "dimensions": {"width": width, "height": height},
-                "placeholders": self._extract_placeholders_from_mapping(
-                    content_mapping
-                ),
-                "created_at": datetime.now().isoformat(),
-                "version": "1.0",
-            }
 
             return {
                 "template_path": template_path,
                 "svg_content": svg_content,
-                "template_data": template_data,
+                "template_data": svg_content,
                 "analysis": content_mapping,
                 "placeholders": self._extract_placeholders_from_mapping(content_mapping),
                 "status": "success",
             }
 
         except Exception as e:
-            raise Exception(f"Template creation failed: {str(e)}")
+            raise Exception(f"Template generation failed: {str(e)}")
 
-    async def _create_svg_template(
-        self,
-        width: int,
-        height: int,
-        analysis: Dict[str, Any],
-        original_image: np.ndarray,
-    ) -> str:
-        """Generate SVG template with high-accuracy visual recreation"""
+    def _create_content_mapping(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Create content mapping from analysis results"""
         try:
-            # Start SVG document
-            svg_parts = []
-            svg_parts.append(f'<?xml version="1.0" encoding="UTF-8"?>')
-            svg_parts.append(
-                f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">'
-            )
-
-            # Add background
-            background_info = analysis.get("background_info", {})
-            bg_color = background_info.get("background_color", "#ffffff")
-            svg_parts.append(
-                f'<rect width="{width}" height="{height}" fill="{bg_color}"/>'
-            )
-
-            # Add image placeholders first (behind text)
-            image_regions = analysis.get("image_regions", [])
-            for i, region in enumerate(image_regions):
-                if "bbox" in region:
-                    x1, y1, x2, y2 = region["bbox"]
-                    img_width = x2 - x1
-                    img_height = y2 - y1
-
-                    placeholder_tag = region.get("placeholder_tag", f"{{IMAGE_{i+1}}}")
-
-                    # Create image placeholder rectangle
-                    svg_parts.append(
-                        f'<rect x="{x1}" y="{y1}" width="{img_width}" height="{img_height}" '
-                        f'fill="#e0e0e0" stroke="#cccccc" stroke-width="2" '
-                        f'stroke-dasharray="5,5" opacity="0.8"/>'
-                    )
-
-                    # Add placeholder text
-                    text_x = x1 + img_width // 2
-                    text_y = y1 + img_height // 2
-                    font_size = min(16, img_height // 4)
-
-                    svg_parts.append(
-                        f'<text x="{text_x}" y="{text_y}" '
-                        f'font-family="Arial, sans-serif" font-size="{font_size}" '
-                        f'fill="#666666" text-anchor="middle" dominant-baseline="middle">'
-                        f"{placeholder_tag}</text>"
-                    )
-
-            # Add text elements with preserved styling
+            # Extract relevant information from analysis
             text_elements = analysis.get("text_elements", [])
-            fonts_info = analysis.get("fonts", {}).get("detected_fonts", [])
-            colors = analysis.get("colors", {})
+            image_regions = analysis.get("image_regions", [])
+            colors = analysis.get("colors", [])
+            fonts = analysis.get("fonts", [])
+            layout_structure = analysis.get("layout_structure", {})
+            background_info = analysis.get("background_info", {})
 
-            for i, text_elem in enumerate(text_elements):
-                if "bbox" in text_elem and "suggested_placeholder" in text_elem:
-                    x1, y1, x2, y2 = text_elem["bbox"]
-                    placeholder = text_elem["suggested_placeholder"]
+            # Create structured content mapping
+            content_mapping = {
+                "text_elements": self._process_text_elements(text_elements),
+                "image_regions": self._process_image_regions(image_regions),
+                "color_palette": self._process_colors(colors),
+                "font_suggestions": self._process_fonts(fonts),
+                "layout_structure": layout_structure,
+                "background_info": background_info,
+                "placeholders": self._generate_placeholders(text_elements, image_regions),
+            }
 
-                    # Get font information for this text element
-                    font_info = fonts_info[i] if i < len(fonts_info) else {}
-                    font_size = font_info.get("estimated_size", 16)
-
-                    # Determine text color (use dominant color or black)
-                    text_color = self._get_text_color(
-                        original_image, [x1, y1, x2, y2], colors
-                    )
-
-                    # Calculate text position
-                    text_x = x1
-                    text_y = y1 + font_size  # Baseline adjustment
-
-                    # Add text element
-                    svg_parts.append(
-                        f'<text x="{text_x}" y="{text_y}" '
-                        f'font-family="Arial, sans-serif" font-size="{font_size}" '
-                        f'fill="{text_color}" '
-                        f'font-weight="{self._get_font_weight(font_info)}" '
-                        f'text-anchor="start">'
-                        f"{placeholder}</text>"
-                    )
-
-            # Add layout structure elements (decorative shapes, lines, etc.)
-            layout_regions = analysis.get("layout_structure", {}).get(
-                "layout_regions", []
-            )
-            for region in layout_regions:
-                if "bbox" in region:
-                    x1, y1, x2, y2 = region["bbox"]
-                    region_width = x2 - x1
-                    region_height = y2 - y1
-
-                    # Only add decorative elements for larger regions
-                    if region_width > 50 and region_height > 50:
-                        # Check if this region doesn't overlap with text or images
-                        if not self._overlaps_with_content(
-                            region["bbox"], text_elements, image_regions
-                        ):
-                            # Add subtle decorative border
-                            svg_parts.append(
-                                f'<rect x="{x1}" y="{y1}" width="{region_width}" height="{region_height}" '
-                                f'fill="none" stroke="#f0f0f0" stroke-width="1" opacity="0.5"/>'
-                            )
-
-            # Close SVG
-            svg_parts.append("</svg>")
-
-            return "\n".join(svg_parts)
+            return content_mapping
 
         except Exception as e:
-            raise Exception(f"SVG generation failed: {str(e)}")
+            print(f"Error creating content mapping: {e}")
+            return {}
 
-    def _get_text_color(
-        self, image: np.ndarray, bbox: List[int], colors: Dict[str, Any]
-    ) -> str:
-        """Determine appropriate text color based on image analysis"""
+    def _process_text_elements(self, text_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Process and enhance text elements"""
+        processed_elements = []
+
+        for i, element in enumerate(text_elements):
+            processed_element = {
+                "id": f"text_{i+1}",
+                "content": element.get("content", f"Text Element {i+1}"),
+                "bbox": element.get("bbox", [0, 0, 100, 20]),
+                "confidence": element.get("confidence", 0.8),
+                "font_size": self._estimate_font_size(element.get("bbox", [0, 0, 100, 20])),
+                "placeholder_tag": f"{{TEXT_{i+1}}}",
+                "suggested_placeholder": element.get("suggested_placeholder", f"{{TEXT_{i+1}}}"),
+            }
+            processed_elements.append(processed_element)
+
+        return processed_elements
+
+    def _process_image_regions(self, image_regions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Process and enhance image regions"""
+        processed_regions = []
+
+        for i, region in enumerate(image_regions):
+            processed_region = {
+                "id": f"image_{i+1}",
+                "bbox": region.get("bbox", [0, 0, 100, 100]),
+                "type": region.get("type", "placeholder"),
+                "placeholder_tag": f"{{IMAGE_{i+1}}}",
+                "suggested_content": region.get("suggested_content", "Image placeholder"),
+            }
+            processed_regions.append(processed_region)
+
+        return processed_regions
+
+    def _process_colors(self, colors: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Process color information"""
         try:
-            x1, y1, x2, y2 = bbox
+            if not colors:
+                return {
+                    "dominant": "#2196F3",
+                    "palette": ["#2196F3", "#FFC107", "#4CAF50"],
+                    "background": "#FFFFFF",
+                    "text": "#333333",
+                }
 
-            # Extract text region
-            if y2 <= image.shape[0] and x2 <= image.shape[1] and y1 >= 0 and x1 >= 0:
-                text_region = image[y1:y2, x1:x2]
-                if text_region.size > 0:
-                    # Calculate average color in text region
-                    avg_color = np.mean(text_region, axis=(0, 1))
-                    # Convert BGR to RGB and then to hex
-                    rgb_color = (
-                        int(avg_color[2]),
-                        int(avg_color[1]),
-                        int(avg_color[0]),
-                    )
-                    return "#{:02x}{:02x}{:02x}".format(*rgb_color)
+            # Extract dominant color
+            dominant_color = colors[0] if colors else "#2196F3"
+            if isinstance(dominant_color, dict):
+                dominant_color = dominant_color.get("hex", "#2196F3")
 
-            # Fallback to dominant color or black
-            dominant_color = colors.get("dominant_color", "#000000")
-            return dominant_color
+            # Create color palette
+            palette = []
+            for color in colors[:5]:  # Take first 5 colors
+                if isinstance(color, dict):
+                    palette.append(color.get("hex", "#000000"))
+                else:
+                    palette.append(str(color))
 
-        except Exception:
-            return "#000000"  # Default to black
+            return {
+                "dominant": dominant_color,
+                "palette": palette,
+                "background": "#FFFFFF",
+                "text": "#333333",
+            }
 
-    def _get_font_weight(self, font_info: Dict[str, Any]) -> str:
-        """Determine font weight based on analysis"""
-        text_type = font_info.get("text_type", "body")
+        except Exception as e:
+            print(f"Error processing colors: {e}")
+            return {
+                "dominant": "#2196F3",
+                "palette": ["#2196F3", "#FFC107", "#4CAF50"],
+                "background": "#FFFFFF",
+                "text": "#333333",
+            }
 
-        if text_type == "title":
-            return "bold"
-        elif text_type == "subtitle":
-            return "600"
-        else:
-            return "normal"
+    def _process_fonts(self, fonts: List[Dict[str, Any]]) -> List[str]:
+        """Process font information"""
+        try:
+            font_suggestions = []
 
-    def _overlaps_with_content(
-        self, bbox: List[int], text_elements: List[Dict], image_regions: List[Dict]
-    ) -> bool:
-        """Check if a region overlaps with existing content"""
-        x1, y1, x2, y2 = bbox
+            for font in fonts:
+                if isinstance(font, dict):
+                    font_name = font.get("name", "Arial")
+                else:
+                    font_name = str(font)
 
-        # Check overlap with text elements
-        for text_elem in text_elements:
-            if "bbox" in text_elem:
-                tx1, ty1, tx2, ty2 = text_elem["bbox"]
-                if not (x2 < tx1 or x1 > tx2 or y2 < ty1 or y1 > ty2):
-                    return True
+                if font_name not in font_suggestions:
+                    font_suggestions.append(font_name)
 
-        # Check overlap with image regions
-        for img_region in image_regions:
-            if "bbox" in img_region:
-                ix1, iy1, ix2, iy2 = img_region["bbox"]
-                if not (x2 < ix1 or x1 > ix2 or y2 < iy1 or y1 > iy2):
-                    return True
+            # Add default fonts if none found
+            if not font_suggestions:
+                font_suggestions = ["Arial", "Helvetica", "Times New Roman"]
 
-        return False
+            return font_suggestions[:3]  # Limit to 3 suggestions
 
-    def _extract_placeholders_from_mapping(self, analysis: Dict[str, Any]) -> List[str]:
-        """Extract all placeholder tags used in the template"""
+        except Exception as e:
+            print(f"Error processing fonts: {e}")
+            return ["Arial", "Helvetica", "Times New Roman"]
+
+    async def _create_svg_template(
+        self, content_mapping: Dict[str, Any], style_config: Dict[str, Any], dimensions: tuple
+    ) -> str:
+        """Generate SVG template content"""
+        try:
+            width, height = dimensions
+            svg_content = f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">\n'
+
+            # Add background
+            svg_content += self._add_background(style_config, width, height)
+
+            # Add image placeholders
+            svg_content += self._add_image_placeholders(
+                content_mapping.get("image_regions", []), style_config
+            )
+
+            # Add text elements
+            svg_content += self._add_text_elements(
+                content_mapping.get("text_elements", []), style_config
+            )
+
+            # Add layout structure elements
+            svg_content += self._add_layout_elements(
+                content_mapping.get("layout_structure", {}), style_config
+            )
+
+            svg_content += "</svg>"
+
+            return svg_content
+
+        except Exception as e:
+            print(f"Error creating SVG template: {e}")
+            return f'<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#FFFFFF"/><text x="400" y="300" text-anchor="middle" font-size="24" fill="#333333">Template Generation Error</text></svg>'
+
+    def _add_background(self, style_config: Dict[str, Any], width: int, height: int) -> str:
+        """Add background to SVG"""
+        bg_color = style_config.get("background_color", "#FFFFFF")
+        return f'  <rect width="{width}" height="{height}" fill="{bg_color}"/>\n'
+
+    def _add_image_placeholders(self, image_regions: List[Dict[str, Any]], style_config: Dict[str, Any]) -> str:
+        """Add image placeholders to SVG"""
+        svg_content = ""
+
+        for region in image_regions:
+            bbox = region.get("bbox", [0, 0, 100, 100])
+            x, y, x2, y2 = bbox
+            width = x2 - x
+            height = y2 - y
+            placeholder_tag = region.get("placeholder_tag", "{IMAGE}")
+
+            # Add placeholder rectangle
+            svg_content += f'  <rect x="{x}" y="{y}" width="{width}" height="{height}" fill="#e0e0e0" stroke="#cccccc" stroke-width="2" stroke-dasharray="5,5"/>\n'
+
+            # Add placeholder text
+            text_x = x + width // 2
+            text_y = y + height // 2
+            font_size = min(16, height // 4)
+            svg_content += f'  <text x="{text_x}" y="{text_y}" text-anchor="middle" font-size="{font_size}" fill="#666666">{placeholder_tag}</text>\n'
+
+        return svg_content
+
+    def _add_text_elements(self, text_elements: List[Dict[str, Any]], style_config: Dict[str, Any]) -> str:
+        """Add text elements to SVG"""
+        svg_content = ""
+        font_family = style_config.get("font_family", "Arial")
+        text_color = style_config.get("text_color", "#333333")
+
+        for element in text_elements:
+            bbox = element.get("bbox", [0, 0, 100, 20])
+            x, y = bbox[0], bbox[1]
+            font_size = element.get("font_size", 16)
+            placeholder_tag = element.get("placeholder_tag", "{TEXT}")
+
+            svg_content += f'  <text x="{x}" y="{y + font_size}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}">{placeholder_tag}</text>\n'
+
+        return svg_content
+
+    def _add_layout_elements(self, layout_structure: Dict[str, Any], style_config: Dict[str, Any]) -> str:
+        """Add layout structure elements to SVG"""
+        svg_content = ""
+        primary_color = style_config.get("primary_color", "#2196F3")
+        border_radius = style_config.get("border_radius", 8)
+
+        # Add decorative elements based on layout structure
+        if layout_structure.get("has_border", False):
+            svg_content += f'  <rect x="10" y="10" width="780" height="580" fill="none" stroke="{primary_color}" stroke-width="2" rx="{border_radius}"/>\n'
+
+        return svg_content
+
+    def _estimate_font_size(self, bbox: List[int]) -> int:
+        """Estimate appropriate font size based on bounding box"""
+        try:
+            height = bbox[3] - bbox[1]
+            # Estimate font size as 70% of height
+            font_size = max(12, min(48, int(height * 0.7)))
+            return font_size
+        except:
+            return 16
+
+    def _generate_placeholders(self, text_elements: List[Dict[str, Any]], image_regions: List[Dict[str, Any]]) -> List[str]:
+        """Generate list of all placeholders"""
         placeholders = set()
 
-        # From text elements
-        text_elements = analysis.get("text_elements", [])
-        for elem in text_elements:
-            placeholder = elem.get("suggested_placeholder")
-            if placeholder:
-                placeholders.add(placeholder)
+        # Add text placeholders
+        for i, element in enumerate(text_elements):
+            placeholders.add(f"{{TEXT_{i+1}}}")
 
-        # From image regions
-        image_regions = analysis.get("image_regions", [])
-        for region in image_regions:
-            placeholder = region.get("placeholder_tag")
-            if placeholder:
-                placeholders.add(placeholder)
+        # Add image placeholders
+        for i, region in enumerate(image_regions):
+            placeholders.add(f"{{IMAGE_{i+1}}}")
+
+        # Add common content placeholders
+        common_placeholders = [
+            "{TITLE}", "{SUBTITLE}", "{DESCRIPTION}", "{AUTHOR}", "{DATE}",
+            "{CATEGORY}", "{TAG}", "{QUOTE}", "{CTA_TEXT}", "{PRICE}",
+            "{DOMAIN}", "{SITE_NAME}", "{BRAND_NAME}", "{URL}", "{USERNAME}"
+        ]
+        placeholders.update(common_placeholders)
 
         return sorted(list(placeholders))
 
@@ -374,96 +412,3 @@ class TemplateGenerator:
             filename = f"template_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         return filename
-
-    async def update_template(
-        self, template_path: str, updates: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Update existing template with user modifications"""
-        try:
-            # Read existing template
-            with open(template_path, "r", encoding="utf-8") as f:
-                svg_content = f.read()
-
-            # Parse SVG
-            root = ET.fromstring(svg_content)
-
-            # Apply updates
-            if "colors" in updates:
-                await self._update_colors(root, updates["colors"])
-
-            if "fonts" in updates:
-                await self._update_fonts(root, updates["fonts"])
-
-            if "positions" in updates:
-                await self._update_positions(root, updates["positions"])
-
-            if "placeholders" in updates:
-                await self._update_placeholders(root, updates["placeholders"])
-
-            # Convert back to string
-            updated_svg = ET.tostring(root, encoding="unicode")
-
-            # Save updated template
-            with open(template_path, "w", encoding="utf-8") as f:
-                f.write(updated_svg)
-
-            return {
-                "template_path": template_path,
-                "analysis": updates,
-                "status": "updated",
-            }
-
-        except Exception as e:
-            raise Exception(f"Template update failed: {str(e)}")
-
-    async def _update_colors(self, root: ET.Element, color_updates: Dict[str, str]):
-        """Update colors in SVG template"""
-        for element in root.iter():
-            # Update fill colors
-            if "fill" in element.attrib:
-                old_color = element.attrib["fill"]
-                if old_color in color_updates:
-                    element.attrib["fill"] = color_updates[old_color]
-
-            # Update stroke colors
-            if "stroke" in element.attrib:
-                old_color = element.attrib["stroke"]
-                if old_color in color_updates:
-                    element.attrib["stroke"] = color_updates[old_color]
-
-    async def _update_fonts(self, root: ET.Element, font_updates: Dict[str, Any]):
-        """Update font properties in SVG template"""
-        for text_elem in root.iter("text"):
-            if "font-family" in font_updates:
-                text_elem.attrib["font-family"] = font_updates["font-family"]
-
-            if "font-size" in font_updates:
-                text_elem.attrib["font-size"] = str(font_updates["font-size"])
-
-            if "font-weight" in font_updates:
-                text_elem.attrib["font-weight"] = font_updates["font-weight"]
-
-    async def _update_positions(
-        self, root: ET.Element, position_updates: Dict[str, Dict[str, float]]
-    ):
-        """Update element positions in SVG template"""
-        for element_id, new_pos in position_updates.items():
-            # Find element by ID or content
-            for element in root.iter():
-                if element.attrib.get("id") == element_id or element.text == element_id:
-                    if "x" in new_pos:
-                        element.attrib["x"] = str(new_pos["x"])
-                    if "y" in new_pos:
-                        element.attrib["y"] = str(new_pos["y"])
-                    if "width" in new_pos:
-                        element.attrib["width"] = str(new_pos["width"])
-                    if "height" in new_pos:
-                        element.attrib["height"] = str(new_pos["height"])
-
-    async def _update_placeholders(
-        self, root: ET.Element, placeholder_updates: Dict[str, str]
-    ):
-        """Update placeholder tags in SVG template"""
-        for text_elem in root.iter("text"):
-            if text_elem.text and text_elem.text in placeholder_updates:
-                text_elem.text = placeholder_updates[text_elem.text]
