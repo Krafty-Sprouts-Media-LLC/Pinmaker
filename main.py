@@ -196,8 +196,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 class AnalysisResponse(BaseModel):
     success: bool
     analysis_id: str
-    colors: list
-    fonts: list
+    colors: dict  # Changed from list to dict to match current ImageAnalyzer output
+    fonts: dict   # Changed from list to dict to match current ImageAnalyzer output
     text_elements: list
     image_regions: list
     layout_structure: dict
@@ -270,37 +270,89 @@ async def analyze_image(file: UploadFile = File(...)):
         analysis_id = str(uuid.uuid4())
         file_path = config.UPLOAD_DIR / f"{analysis_id}.{file.filename.split('.')[-1]}"
 
+        # Ensure upload directory exists and is writable
+        config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        
         with open(file_path, "wb") as f:
             f.write(content)
 
-        # Analyze image
+        # Analyze image with enhanced error handling
         logger.info(f"Starting analysis for image: {file_path}")
         try:
-            analysis_result = await asyncio.to_thread(
-                image_analyzer.analyze_image, str(file_path)
+            # Check if image analyzer is available
+            if image_analyzer is None:
+                logger.error("Image analyzer not initialized")
+                raise HTTPException(status_code=500, detail="Image analysis service not available")
+            
+            # Test basic dependencies first
+            try:
+                import cv2
+                import numpy as np
+                logger.info("OpenCV and NumPy available")
+            except ImportError as e:
+                logger.error(f"Missing basic dependencies: {e}")
+                raise HTTPException(status_code=500, detail=f"Missing basic image processing libraries: {e}")
+            
+            # Perform analysis with timeout
+            import asyncio
+            analysis_result = await asyncio.wait_for(
+                asyncio.to_thread(image_analyzer.analyze_image, str(file_path)),
+                timeout=60.0  # 60 second timeout
             )
+            
             logger.info(f"Analysis completed successfully for: {analysis_id}")
+            
+            # Save analysis results for later use
+            analysis_file = config.UPLOAD_DIR / f"{analysis_id}.json"
+            import json
+            with open(analysis_file, "w") as f:
+                json.dump(analysis_result, f)
             
             return AnalysisResponse(
                 success=True, analysis_id=analysis_id, **analysis_result
             )
+        except asyncio.TimeoutError:
+            logger.error(f"Analysis timeout for {analysis_id}")
+            raise HTTPException(
+                status_code=504, 
+                detail="Image analysis timed out. Please try with a smaller image."
+            )
         except Exception as analysis_error:
             logger.error(f"Image analysis failed for {analysis_id}: {analysis_error}")
+            logger.error(f"Error type: {type(analysis_error).__name__}")
+            logger.error(f"Error details: {str(analysis_error)}")
+            
             # Clean up the uploaded file if analysis fails
             try:
                 if file_path.exists():
                     file_path.unlink()
-            except:
-                pass
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Image analysis failed: {str(analysis_error)}"
-            )
+            except Exception as cleanup_error:
+                logger.error(f"Failed to cleanup file {file_path}: {cleanup_error}")
+            
+            # Provide more specific error messages
+            error_msg = str(analysis_error)
+            if "CUDA" in error_msg or "GPU" in error_msg:
+                error_msg = "GPU memory error. Please try with a smaller image."
+            elif "memory" in error_msg.lower():
+                error_msg = "Server memory limit exceeded. Please try with a smaller image."
+            elif "model" in error_msg.lower() or "yolo" in error_msg.lower():
+                error_msg = "AI model loading error. Please try again in a few moments."
+            elif "easyocr" in error_msg.lower():
+                error_msg = "Text recognition service error. Please try again."
+            elif "colorthief" in error_msg.lower():
+                error_msg = "Color analysis error. Please try again."
+            else:
+                error_msg = f"Image analysis failed: {error_msg}"
+            
+            raise HTTPException(status_code=500, detail=error_msg)
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Unexpected error in analyze endpoint: {e}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Internal server error during image upload")
 
 
@@ -469,6 +521,166 @@ async def root():
         "docs": "/api/docs",
         "frontend": "https://pinmaker-frontend.netlify.app",  # Update with your Netlify URL
     }
+
+
+@app.get(f"{config.API_PREFIX}/diagnose")
+async def diagnose_services():
+    """Diagnose service availability and dependencies."""
+    diagnostics = {
+        "server_status": "running",
+        "services": {},
+        "dependencies": {},
+        "errors": []
+    }
+    
+    # Check image analyzer
+    try:
+        if image_analyzer is None:
+            diagnostics["services"]["image_analyzer"] = "not_initialized"
+            diagnostics["errors"].append("Image analyzer not initialized")
+        else:
+            diagnostics["services"]["image_analyzer"] = "available"
+            
+            # Test basic dependencies
+            try:
+                import cv2
+                diagnostics["dependencies"]["opencv"] = "available"
+            except ImportError as e:
+                diagnostics["dependencies"]["opencv"] = f"missing: {e}"
+                diagnostics["errors"].append(f"OpenCV missing: {e}")
+            
+            try:
+                import numpy as np
+                diagnostics["dependencies"]["numpy"] = "available"
+            except ImportError as e:
+                diagnostics["dependencies"]["numpy"] = f"missing: {e}"
+                diagnostics["errors"].append(f"NumPy missing: {e}")
+            
+            try:
+                import easyocr
+                diagnostics["dependencies"]["easyocr"] = "available"
+            except ImportError as e:
+                diagnostics["dependencies"]["easyocr"] = f"missing: {e}"
+                diagnostics["errors"].append(f"EasyOCR missing: {e}")
+            
+            try:
+                from ultralytics import YOLO
+                diagnostics["dependencies"]["ultralytics"] = "available"
+            except ImportError as e:
+                diagnostics["dependencies"]["ultralytics"] = f"missing: {e}"
+                diagnostics["errors"].append(f"Ultralytics missing: {e}")
+            
+            try:
+                from colorthief import ColorThief
+                diagnostics["dependencies"]["colorthief"] = "available"
+            except ImportError as e:
+                diagnostics["dependencies"]["colorthief"] = f"missing: {e}"
+                diagnostics["errors"].append(f"ColorThief missing: {e}")
+                
+    except Exception as e:
+        diagnostics["services"]["image_analyzer"] = f"error: {e}"
+        diagnostics["errors"].append(f"Image analyzer error: {e}")
+    
+    # Check file permissions
+    try:
+        test_file = config.UPLOAD_DIR / "test_write.tmp"
+        test_file.write_text("test")
+        test_file.unlink()
+        diagnostics["permissions"]["upload_dir"] = "writable"
+    except Exception as e:
+        diagnostics["permissions"]["upload_dir"] = f"not_writable: {e}"
+        diagnostics["errors"].append(f"Upload directory not writable: {e}")
+    
+    # Check available memory
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        diagnostics["system"]["memory_available"] = f"{memory.available / (1024**3):.1f}GB"
+        diagnostics["system"]["memory_percent"] = f"{memory.percent}%"
+    except ImportError:
+        diagnostics["system"]["memory"] = "psutil not available"
+    
+    return diagnostics
+
+
+@app.post(f"{config.API_PREFIX}/test-analyze")
+async def test_analyze_image(file: UploadFile = File(...)):
+    """Simple test endpoint using only basic image processing."""
+    try:
+        # Validate file
+        if file.content_type not in config.ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=400, detail="Invalid file type")
+
+        # Read file
+        content = await file.read()
+        if len(content) > config.MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File too large")
+
+        # Test basic image processing
+        try:
+            import cv2
+            import numpy as np
+            from PIL import Image
+            import io
+            
+            # Convert bytes to PIL Image
+            image = Image.open(io.BytesIO(content))
+            width, height = image.size
+            
+            # Convert to OpenCV format
+            opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            
+            # Basic analysis without heavy dependencies
+            analysis_result = {
+                "dimensions": {"width": width, "height": height},
+                "colors": {
+                    "dominant_color": "#ffffff",
+                    "palette": ["#ffffff", "#000000"],
+                    "cluster_colors": ["#ffffff", "#000000"],
+                    "color_analysis": "basic"
+                },
+                "fonts": {
+                    "detected_fonts": [],
+                    "font_analysis": "basic",
+                    "total_text_regions": 0
+                },
+                "text_elements": [],
+                "layout_structure": {
+                    "layout_regions": [],
+                    "grid_analysis": {"grid_detected": False},
+                    "layout_type": "simple"
+                },
+                "image_regions": [],
+                "background_info": {
+                    "background_color": "#ffffff",
+                    "background_type": "solid",
+                    "background_variance": 0.0
+                },
+                "analysis_complete": True
+            }
+            
+            return AnalysisResponse(
+                success=True, 
+                analysis_id="test_analysis",
+                **analysis_result
+            )
+            
+        except ImportError as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Basic image processing failed - missing dependency: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Basic image processing failed: {e}"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Test analyze error: {e}")
+        raise HTTPException(status_code=500, detail="Test analysis failed")
 
 
 if __name__ == "__main__":

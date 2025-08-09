@@ -346,6 +346,50 @@ class PreviewGenerator:
             print(f"Error getting stock image: {e}")
             return None
 
+    async def generate_preview(
+        self,
+        svg_content: str,
+        sample_text: dict = None,
+        stock_keywords: list = None,
+        style: str = "modern",
+        format: str = "jpeg",
+        quality: int = 85,
+    ) -> Dict[str, Any]:
+        """Generate preview image from SVG content with sample content"""
+        try:
+            import io
+            from PIL import Image
+            
+            # Parse SVG
+            root = ET.fromstring(svg_content)
+
+            # Get dimensions
+            width = int(root.attrib.get("width", 800))
+            height = int(root.attrib.get("height", 600))
+
+            # Create preview image
+            preview_image = await self._render_preview(root, width, height, {})
+
+            # Convert to bytes
+            img_buffer = io.BytesIO()
+            if format.lower() == "png":
+                preview_image.save(img_buffer, "PNG", quality=quality, optimize=True)
+            else:
+                preview_image.save(img_buffer, "JPEG", quality=quality, optimize=True)
+            
+            img_buffer.seek(0)
+            image_data = img_buffer.getvalue()
+
+            return {
+                "image_data": image_data,
+                "dimensions": {"width": width, "height": height},
+                "format": format,
+                "status": "success",
+            }
+
+        except Exception as e:
+            raise Exception(f"Preview generation failed: {str(e)}")
+
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename for safe file system usage"""
         # Remove or replace invalid characters

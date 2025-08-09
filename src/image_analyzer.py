@@ -36,17 +36,43 @@ class ImageAnalyzer:
             height, width = image.shape[:2]
 
             # Perform all analysis tasks (synchronously for thread execution)
-            colors = self._extract_colors(image_path)
-            fonts = self._detect_fonts(image)
+            colors_data = self._extract_colors(image_path)
+            fonts_data = self._detect_fonts(image)
             text_elements = self._extract_text(image)
             layout_structure = self._analyze_layout(image)
             image_regions = self._detect_image_regions(image)
             background_info = self._analyze_background(image)
 
+            # Convert to expected Pydantic format
+            # colors should be a list, fonts should be a list
+            colors_list = []
+            if isinstance(colors_data, dict) and "error" not in colors_data:
+                # Extract color information into list format
+                if "dominant_color" in colors_data:
+                    colors_list.append({"type": "dominant", "color": colors_data["dominant_color"]})
+                if "palette" in colors_data:
+                    for i, color in enumerate(colors_data["palette"]):
+                        colors_list.append({"type": "palette", "color": color, "index": i})
+                if "cluster_colors" in colors_data:
+                    for i, color in enumerate(colors_data["cluster_colors"]):
+                        colors_list.append({"type": "cluster", "color": color, "index": i})
+            else:
+                # Fallback if color extraction failed
+                colors_list = [{"type": "fallback", "color": "#ffffff"}]
+
+            # Convert fonts data to list format
+            fonts_list = []
+            if isinstance(fonts_data, dict) and "error" not in fonts_data:
+                if "detected_fonts" in fonts_data:
+                    fonts_list = fonts_data["detected_fonts"]
+            else:
+                # Fallback if font detection failed
+                fonts_list = []
+
             return {
                 "dimensions": {"width": width, "height": height},
-                "colors": colors,
-                "fonts": fonts,
+                "colors": colors_list,
+                "fonts": fonts_list,
                 "text_elements": text_elements,
                 "layout_structure": layout_structure,
                 "image_regions": image_regions,

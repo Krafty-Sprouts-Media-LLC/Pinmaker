@@ -117,6 +117,26 @@ ls -la /etc/nginx/sites-available/
 sudo cp -v /opt/Pinmaker/nginx.conf /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com
 ```
 
+### If Nginx Test Fails
+```bash
+# Check nginx error log
+sudo tail -f /var/log/nginx/error.log
+
+# Check for syntax errors in the copied config
+sudo nginx -t
+
+# Check if there are conflicting configurations
+sudo nginx -T | grep -i "api.pinmaker"
+
+# If you get "limit_req_zone 'api' is already bound" error:
+# This means both old and new configs define the same zone name
+# Disable the old pinmaker site first:
+sudo rm /etc/nginx/sites-enabled/pinmaker
+sudo nginx -t
+# If test passes, reload nginx:
+sudo systemctl reload nginx
+```
+
 ### If SSL Certificate Generation Fails
 ```bash
 # Check if HTTP access works first

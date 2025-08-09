@@ -91,8 +91,10 @@ class TemplateGenerator:
 
             return {
                 "template_path": template_path,
+                "svg_content": svg_content,
                 "template_data": template_data,
                 "analysis": content_mapping,
+                "placeholders": self._extract_placeholders_from_mapping(content_mapping),
                 "status": "success",
             }
 
@@ -294,6 +296,61 @@ class TemplateGenerator:
                 placeholders.add(placeholder)
 
         return sorted(list(placeholders))
+
+    def _update_placeholders(self, svg_content: str, analysis: Dict[str, Any]) -> str:
+        """Update placeholder tags in SVG content"""
+        try:
+            # Replace text placeholders
+            text_elements = analysis.get("text_elements", [])
+            for i, element in enumerate(text_elements):
+                placeholder = f"{{TEXT_{i+1}}}"
+                content = element.get("content", "Sample Text")
+                svg_content = svg_content.replace(placeholder, content)
+
+            # Replace image placeholders
+            image_regions = analysis.get("image_regions", [])
+            for i, region in enumerate(image_regions):
+                placeholder = f"{{IMAGE_{i+1}}}"
+                # For now, keep as placeholder - will be handled by preview generator
+                svg_content = svg_content.replace(placeholder, placeholder)
+
+            return svg_content
+
+        except Exception as e:
+            print(f"Error updating placeholders: {e}")
+            return svg_content
+
+    def _extract_placeholders_from_mapping(self, content_mapping: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract placeholders from content mapping"""
+        try:
+            placeholders = []
+            
+            # Extract text placeholders
+            text_elements = content_mapping.get("text_elements", [])
+            for i, element in enumerate(text_elements):
+                placeholders.append({
+                    "type": "text",
+                    "id": f"TEXT_{i+1}",
+                    "tag": f"{{TEXT_{i+1}}}",
+                    "content": element.get("content", "Sample Text"),
+                    "bbox": element.get("bbox", [0, 0, 100, 20])
+                })
+            
+            # Extract image placeholders
+            image_regions = content_mapping.get("image_regions", [])
+            for i, region in enumerate(image_regions):
+                placeholders.append({
+                    "type": "image",
+                    "id": f"IMAGE_{i+1}",
+                    "tag": f"{{IMAGE_{i+1}}}",
+                    "bbox": region.get("bbox", [0, 0, 100, 100])
+                })
+            
+            return placeholders
+            
+        except Exception as e:
+            print(f"Error extracting placeholders: {e}")
+            return []
 
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename for safe file system usage"""
