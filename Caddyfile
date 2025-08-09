@@ -19,7 +19,7 @@
 }
 
 # API subdomain - main endpoint
-api.pinmaker.kraftysprouts.com {
+pinapi.kraftysprouts.com {
     
     # Security headers
     header {
