@@ -10,71 +10,27 @@ The deployment script failed to create the nginx configuration for `api.pinmaker
 
 ## Manual Setup Steps
 
-### 1. Create Nginx Site Configuration
+### 1. Use Existing Nginx Configuration
+
+**Good news!** The project already has the correct Nginx configuration in `nginx.conf`. The deployment script should copy this to `/etc/nginx/sites-available/api.pinmaker.kraftysprouts.com`.
+
+If the deployment script didn't work, manually copy the existing configuration:
 
 ```bash
 # SSH into your VPS
 ssh pinmaker@your-vps-ip
 
-# Create the nginx site configuration
-sudo nano /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com
+# Copy the project's nginx.conf to the correct location
+sudo cp /opt/Pinmaker/nginx.conf /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com
 ```
 
-### 2. Add Nginx Configuration
+The existing `nginx.conf` already contains:
+- A dedicated server block for `api.pinmaker.kraftysprouts.com`
+- Proper rate limiting and security headers
+- Correct proxy configuration to the FastAPI backend
+- Optimized settings for API responses
 
-Paste the following configuration:
-
-```nginx
-# Rate limiting
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
-limit_conn_zone $binary_remote_addr zone=api_conn:10m;
-
-# Upstream backend
-upstream pinmaker_backend {
-    server 127.0.0.1:8000;
-    keepalive 32;
-}
-
-# API Subdomain Server Block
-server {
-    listen 80;
-    server_name api.pinmaker.kraftysprouts.com;
-    
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    
-    # Rate limiting
-    limit_req zone=api_limit burst=20 nodelay;
-    limit_conn api_conn 10;
-    
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
-    # Proxy all requests to FastAPI backend
-    location / {
-        proxy_pass http://pinmaker_backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 300;
-        proxy_connect_timeout 300;
-        proxy_send_timeout 300;
-    }
-}
-```
-
-### 3. Enable the Site
+### 2. Enable the Site
 
 ```bash
 # Create symbolic link to enable the site
@@ -90,7 +46,7 @@ sudo systemctl reload nginx
 sudo systemctl status nginx
 ```
 
-### 4. Test HTTP Access
+### 3. Test HTTP Access
 
 ```bash
 # Test that the API subdomain responds
@@ -99,7 +55,7 @@ curl -I http://api.pinmaker.kraftysprouts.com/api/v1/health
 # Should return HTTP 200 response
 ```
 
-### 5. Generate SSL Certificate
+### 4. Generate SSL Certificate
 
 ```bash
 # Install certbot if not already installed
@@ -112,7 +68,7 @@ sudo certbot --nginx -d api.pinmaker.kraftysprouts.com
 # Follow the prompts to complete SSL setup
 ```
 
-### 6. Verify HTTPS Access
+### 5. Verify HTTPS Access
 
 ```bash
 # Test HTTPS access
@@ -149,37 +105,40 @@ curl https://api.pinmaker.kraftysprouts.com/api/v1/health
 
 ## Troubleshooting
 
-### If nginx test fails:
+### If Nginx Configuration Copy Fails
 ```bash
-# Check syntax errors
-sudo nginx -t
+# Check if the source file exists
+ls -la /opt/Pinmaker/nginx.conf
 
-# Check nginx error log
-sudo tail -20 /var/log/nginx/error.log
+# Check nginx directory permissions
+ls -la /etc/nginx/sites-available/
+
+# Manual copy with verbose output
+sudo cp -v /opt/Pinmaker/nginx.conf /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com
 ```
 
-### If SSL generation fails:
+### If SSL Certificate Generation Fails
 ```bash
-# Ensure HTTP works first
-curl -I http://api.pinmaker.kraftysprouts.com
+# Check if HTTP access works first
+curl -I http://api.pinmaker.kraftysprouts.com/api/v1/health
 
-# Check DNS resolution
+# Check certbot logs
+sudo tail -f /var/log/letsencrypt/letsencrypt.log
+
+# Ensure the domain points to your server
 nslookup api.pinmaker.kraftysprouts.com
-
-# Retry certbot with verbose output
-sudo certbot --nginx -d api.pinmaker.kraftysprouts.com --verbose
 ```
 
-### If API not responding:
+### If Backend is Not Responding
 ```bash
-# Check FastAPI service
+# Check if FastAPI backend is running
 sudo systemctl status pinmaker
 
-# Check if port 8000 is listening
-sudo netstat -tlnp | grep :8000
+# Check backend logs
+sudo journalctl -u pinmaker -f
 
-# Restart FastAPI if needed
-sudo systemctl restart pinmaker
+# Test backend directly
+curl http://localhost:8000/api/v1/health
 ```
 
 ## Expected Result
