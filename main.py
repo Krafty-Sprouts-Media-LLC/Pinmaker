@@ -196,8 +196,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 class AnalysisResponse(BaseModel):
     success: bool
     analysis_id: str
-    colors: dict  # Changed from list to dict to match current ImageAnalyzer output
-    fonts: dict   # Changed from list to dict to match current ImageAnalyzer output
+    colors: list  # Changed back to list to match ImageAnalyzer output
+    fonts: list   # Changed back to list to match ImageAnalyzer output
     text_elements: list
     image_regions: list
     layout_structure: dict
