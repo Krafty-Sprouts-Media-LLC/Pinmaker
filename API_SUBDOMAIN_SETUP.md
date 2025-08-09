@@ -43,53 +43,36 @@ sudo certbot certificates
 
 ### 3. Nginx Configuration (VPS)
 
-Create or update your Nginx configuration to handle the API subdomain:
+**IMPORTANT**: The nginx.conf file has been updated with the API subdomain configuration. You need to deploy this to your VPS.
 
-```nginx
-# /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com
-server {
-    listen 80;
-    listen 443 ssl http2;
-    server_name api.pinmaker.kraftysprouts.com;
+**Step 1: Deploy Updated Nginx Configuration**
+```bash
+# On your VPS, backup current config
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup
 
-    # SSL configuration (managed by certbot)
-    ssl_certificate /etc/letsencrypt/live/api.pinmaker.kraftysprouts.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.pinmaker.kraftysprouts.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Redirect HTTP to HTTPS
-    if ($scheme != "https") {
-        return 301 https://$server_name$request_uri;
-    }
-
-    # API routes - proxy to FastAPI
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Extended timeouts for long-running requests
-        proxy_read_timeout 300;
-        proxy_connect_timeout 300;
-        proxy_send_timeout 300;
-        
-        # CORS headers (handled by FastAPI, but can be added here as backup)
-        add_header Access-Control-Allow-Origin "https://pinmaker.kraftysprouts.com" always;
-        add_header Access-Control-Allow-Origin "https://pinmaker.netlify.app" always;
-        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
-    }
-}
+# Copy the updated nginx.conf from your repository
+# (This will be deployed automatically via GitHub Actions)
+# Or manually copy the updated configuration
 ```
 
-Enable the site:
+**Step 2: Test and Reload Nginx**
 ```bash
-sudo ln -s /etc/nginx/sites-available/api.pinmaker.kraftysprouts.com /etc/nginx/sites-enabled/
+# Test nginx configuration
 sudo nginx -t
+
+# If test passes, reload nginx
 sudo systemctl reload nginx
+
+# Check nginx status
+sudo systemctl status nginx
+```
+
+**Step 3: Verify API Subdomain is Accessible**
+```bash
+# Test that the subdomain responds (before SSL)
+curl -I http://api.pinmaker.kraftysprouts.com/api/v1/health
+
+# Should return HTTP 200 response
 ```
 
 ## Changes Made to Codebase
