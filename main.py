@@ -181,6 +181,7 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=[
         "pinmaker.kraftysprouts.com",
+        "api.pinmaker.kraftysprouts.com",  # New API subdomain
         "localhost",
         "*.netlify.app",
         "pinmaker-frontend.netlify.app",
