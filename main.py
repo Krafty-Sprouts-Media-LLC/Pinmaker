@@ -177,18 +177,19 @@ app.add_middleware(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=[
-        "pinmaker.kraftysprouts.com",
-        "api.pinmaker.kraftysprouts.com",  # New API subdomain
-        "localhost",
-        "*.netlify.app",
-        "pinmaker-frontend.netlify.app",
-        "pinmaker.netlify.app",
-        "krafty-sprouts-media-llc.netlify.app",
-    ],
-)
+# Temporarily disable TrustedHostMiddleware to resolve "Invalid host header" issue
+# app.add_middleware(
+#     TrustedHostMiddleware,
+#     allowed_hosts=[
+#         "pinmaker.kraftysprouts.com",
+#         "api.pinmaker.kraftysprouts.com",  # New API subdomain
+#         "localhost",
+#         "*.netlify.app",
+#         "pinmaker-frontend.netlify.app",
+#         "pinmaker.netlify.app",
+#         "krafty-sprouts-media-llc.netlify.app",
+#     ],
+# )
 
 
 # Pydantic models for API requests/responses
