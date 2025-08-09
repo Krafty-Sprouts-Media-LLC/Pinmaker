@@ -4,7 +4,7 @@
 # Global options (must be first)
 {
     # Email for Let's Encrypt
-    email admin@kraftysprouts.com
+    email hello@kraftysprouts.com
     
     # Use Let's Encrypt production
     acme_ca https://acme-v02.api.letsencrypt.org/directory
@@ -61,38 +61,5 @@ api.pinmaker.kraftysprouts.com {
     }
 }
 
-# Main domain - redirect to API or serve static content
-pinmaker.kraftysprouts.com {
-    # Security headers
-    header {
-        # Security headers
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        
-        # Remove server info
-        -Server
-    }
-    
-    # Enable compression
-    encode gzip
-    
-    # Reverse proxy to FastAPI backend
-    reverse_proxy localhost:8000 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-    }
-    
-    # Logging
-    log {
-        output file /var/log/caddy/pinmaker.log {
-            roll_size 100MB
-            roll_keep 5
-            roll_keep_for 720h
-        }
-        format json
-        level INFO
-    }
-}
+# Main domain configuration removed - using Netlify CNAME
+# Only API subdomain is handled by this server
