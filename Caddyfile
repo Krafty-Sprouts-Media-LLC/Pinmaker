@@ -1,6 +1,23 @@
 # Caddy configuration for Pinmaker API
 # Automatic HTTPS with Let's Encrypt
 
+# Global options (must be first)
+{
+    # Email for Let's Encrypt
+    email admin@kraftysprouts.com
+    
+    # Use Let's Encrypt production
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    
+    # Enable admin API
+    admin localhost:2019
+    
+    # Log level
+    log {
+        level INFO
+    }
+}
+
 # API subdomain - main endpoint
 api.pinmaker.kraftysprouts.com {
     
@@ -23,8 +40,6 @@ api.pinmaker.kraftysprouts.com {
         reverse_proxy localhost:8000 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
     
@@ -33,8 +48,6 @@ api.pinmaker.kraftysprouts.com {
         reverse_proxy localhost:8000 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
     
@@ -70,8 +83,6 @@ pinmaker.kraftysprouts.com {
     reverse_proxy localhost:8000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
     }
     
     # Logging
@@ -82,23 +93,6 @@ pinmaker.kraftysprouts.com {
             roll_keep_for 720h
         }
         format json
-        level INFO
-    }
-}
-
-# Global options
-{
-    # Email for Let's Encrypt
-    email admin@kraftysprouts.com
-    
-    # Use Let's Encrypt production
-    acme_ca https://acme-v02.api.letsencrypt.org/directory
-    
-    # Enable admin API
-    admin localhost:2019
-    
-    # Log level
-    log {
         level INFO
     }
 }
