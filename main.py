@@ -544,7 +544,7 @@ async def root():
         "message": "Pinterest Template Generator API",
         "version": "1.0.0",
         "docs": "/api/docs",
-        "frontend": "https://pinmaker-frontend.netlify.app",  # Update with your Netlify URL
+        "frontend": "https://pinmaker.netlify.app",  # Correct Netlify URL
     }
 
 
