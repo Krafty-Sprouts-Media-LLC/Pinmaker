@@ -151,27 +151,8 @@ python -c "import uvicorn; print(f'Uvicorn: {uvicorn.__version__}')"
 echo "Creating application directories..."
 mkdir -p static logs uploads temp
 
-# Install and build frontend if it exists
-if [ -d "frontend" ]; then
-    echo "Setting up frontend..."
-    cd frontend
-    
-    if [ -f "package.json" ]; then
-        echo "Installing Node.js dependencies..."
-        npm install
-        
-        echo "Building frontend..."
-        npm run build
-        
-        # Copy build to static directory
-        if [ -d "dist" ]; then
-            echo "Copying frontend build to static directory..."
-            cp -r dist/* ../static/
-        fi
-    fi
-    
-    cd ..
-fi
+# Skip frontend build - frontend is deployed separately on Netlify
+echo "Skipping frontend build (deployed separately on Netlify)..."
 
 # Create .env file from template
 if [ -f ".env.example" ]; then
